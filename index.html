@@ -85,6 +85,7 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 .reason li time{font-family:var(--mono);font-size:12px;color:var(--muted);margin-right:6px}
 .reason .note{font-size:13px;color:var(--muted)}
 .reason .warn{font-size:13px;color:var(--warn)}
+#langNote{color:var(--warn)}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .steps .n{font-family:var(--mono);color:var(--muted);font-size:13px}
 .soon .pill{margin-bottom:8px}
@@ -452,18 +453,20 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
     </div>
         </div>
         <button class="btn" id="pick" type="button">Choose your chat file</button>
-        <input type="file" id="file" accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed" hidden>
+        <input type="file" id="file" accept=".txt,.zip,.json,text/plain,application/json,application/zip,application/x-zip-compressed" hidden>
         <div class="pastewrap" id="pasteWrap">
           <button class="btn ghost" id="pasteBtn" type="button">Paste the copied file</button>
           <div class="pastezone" id="pasteZone" contenteditable="true" inputmode="none" role="textbox" aria-label="Paste your chat file here" data-ph="If the button does nothing: press and hold here, then tap Paste"></div>
         </div>
         <p class="small muted" id="fileHint">Or drag it anywhere on this page. The full chat covers the whole relationship, so the answers are more reliable. It stays in this browser tab.</p>
+        <details class="plain" id="otherApps"><summary>Telegram or Instagram instead?</summary><p class="small muted"><b>Telegram.</b> On a computer, open Telegram Desktop and the chat. Three dots, Export chat history. Untick photos and other media, set the format to Machine-readable JSON, and add the result.json file here.</p><p class="small muted"><b>Instagram.</b> Settings, Accounts Center, Your information and permissions, Export your information. Choose Messages only, format JSON, export to device. Instagram emails you when it is ready, which can take a day or two. Add the zip here. Every conversation with at least 200 messages is read.</p></details>
       </div>
       </div>
       <div id="done" class="pane done" hidden>
         <p class="eyebrow">Your chat is in</p>
         <h3 id="doneNames"></h3>
         <p class="small muted" id="doneMeta"></p>
+        <p class="small" id="langNote" hidden></p>
         <div class="whoami"><span class="small muted" id="whoAsk">Which one are you?</span><div class="tabs os" role="group" aria-label="Which one are you"><button type="button" id="me0" aria-pressed="false"></button><button type="button" id="me1" aria-pressed="false"></button></div></div>
         <div class="whoami"><span class="small muted" id="typeAsk">Read as</span><b id="typeNow"></b><button class="linkbtn" id="typeFix" type="button" aria-expanded="false" aria-controls="typeRow">Not right? Change</button></div>
         <div class="tabs os typerow" id="typeRow" role="group" aria-label="Kind of relationship" hidden></div>
@@ -547,20 +550,21 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
   <div class="reasons" id="mapCats"></div>
   <div class="card" id="mapListCard" hidden><div class="rels" id="mapList"></div></div>
   <div class="donebtns"><button class="btn alt" id="mapAdd" type="button">Add relationships</button><button class="linkbtn" id="mapClear" type="button">Clear the list</button></div>
-  <input type="file" id="file2" multiple accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed" hidden>
+  <input type="file" id="file2" multiple accept=".txt,.zip,.json,text/plain,application/json,application/zip,application/x-zip-compressed" hidden>
   <p class="small muted" id="mapNote">Choose several exported chats at once. Free while this is in testing. A summary of each is remembered in this browser: names, type, state and scores. No messages are stored.</p>
 </section>
 
 <section class="sec soon" id="more">
   <h2>Coming next</h2>
   <p class="muted">More of the picture, beyond the chat.</p>
-  <div class="chips"><a>Photo dates and places</a><a>Instagram messages</a><a>Calls and calendar</a></div>
+  <div class="chips"><a>Photo dates and places</a><a>Calls and calendar</a></div>
 </section>
 
 <section class="sec" id="limits">
   <h2>What this can and cannot tell you</h2>
   <details open><summary>It describes the past. It does not predict.</summary><p class="muted">Research on couples' messages finds that balance, responsiveness and matching style go with relationships that last. Those are averages over many couples. For one relationship, the chat explains what changed and when far better than it forecasts anything.</p></details>
   <details><summary>A chat cannot prove a reason.</summary><p class="muted">Half of a relationship happens in person and on calls. A theme with a high score means it shows up often in the messages. It is never proof, and for infidelity in particular a chat on its own cannot confirm or rule it out.</p></details>
+  <details><summary>Which apps and languages does it read?</summary><p class="muted">WhatsApp, Telegram and Instagram exports. Everything counted from timings works in any language. The parts that read words know English, Spanish, Portuguese, French, German and Italian. For other languages those parts are left out instead of guessed.</p></details>
   <details><summary>The other person is in this file too.</summary><p class="muted">The export holds someone else's private messages. Keep the report to yourself, and do not use it to confront, monitor or expose them.</p></details>
 </section>
 
@@ -599,19 +603,21 @@ function r1(x){return x==null?null:Math.round(x*10)/10;}
 /* ---------- parsing ---------- */
 var RX=/^\[?(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),? (\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?\]?(?: -)? ([^:]{1,60}?): ([\s\S]*)$/;
 var RX2=/^\[(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?, (\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\] ([^:]{1,60}?): ([\s\S]*)$/;
+var RX3=/^\[?(\d{4})[\/.\-] ?(\d{1,2})[\/.\-] ?(\d{1,2})\.?,? (?:(오전|오후|上午|下午|午前|午後|凌晨|早上|中午|晚上) ?)?(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?\]?(?: -)? ([^:]{1,60}?): ([\s\S]*)$/;
 function parseChat(text){
   var lines=text.replace(/[‎‏﻿]/g,"").replace(/[  ]/g," ").split(/\r?\n/);
   var raw=[],firstBig=0,secondBig=0,i,m;
   for(i=0;i<lines.length;i++){
     m=RX.exec(lines[i]);
     if(!m){var w=RX2.exec(lines[i]);if(w){m=[w[0],w[5],w[6],w[7],w[1],w[2],w[3],w[4],w[8],w[9]];}}
-    if(m){if(+m[1]>12){firstBig++;}if(+m[2]>12){secondBig++;}raw.push(m);}
+    if(!m){var y3=RX3.exec(lines[i]);if(y3){m=[y3[0],y3[3],y3[2],y3[1],y3[5],y3[6],y3[7],y3[4]?(/오후|下午|午後|中午|晚上/.test(y3[4])?"p":"a"):y3[8],y3[9],y3[10]];m.yf=1;}}
+    if(m){if(!m.yf){if(+m[1]>12){firstBig++;}if(+m[2]>12){secondBig++;}}raw.push(m);}
     else if(raw.length){raw[raw.length-1][9]+="\n"+lines[i];}
   }
   var dayFirst=secondBig<=firstBig||firstBig===secondBig;
   var msgs=[];
   for(i=0;i<raw.length;i++){
-    m=raw[i];var d=dayFirst?+m[1]:+m[2],mo=dayFirst?+m[2]:+m[1],y=+m[3];if(y<100){y+=2000;}
+    m=raw[i];var d=m.yf||dayFirst?+m[1]:+m[2],mo=m.yf||dayFirst?+m[2]:+m[1],y=+m[3];if(y<100){y+=2000;}
     var hh=+m[4];if(m[7]){var pm=/p/i.test(m[7]);hh=hh%12+(pm?12:0);}
     var t=new Date(y,mo-1,d,hh,+m[5],+(m[6]||0));
     if(isNaN(t)){continue;}
@@ -620,8 +626,8 @@ function parseChat(text){
   msgs.sort(function(a,b){return a.t-b.t;});
   return msgs;
 }
-function isCall(x){return /voice call|video call|missed call/i.test(x);}
-function isMedia(x){return /<attached:|omitted|\.(jpg|webp|mp4|opus|pdf)\b/i.test(x);}
+function isCall(x){return /voice call|video call|missed call/i.test(x)||(x.length<70&&/llamada (de voz|de video|perdida)|videollamada perdida|chamada (de voz|de v[ií]deo) perdida|ligação (de voz|de vídeo) perdida|appel (vocal|vidéo) manqué|verpasster (sprach|video)anruf|chiamata (vocale|video) persa|videochiamata persa/i.test(x));}
+function isMedia(x){return /<attached:|omitted|\.(jpg|webp|mp4|opus|pdf)\b/i.test(x)||/<(adjunto|anexado|pièce jointe|anhang|allegato) ?:/i.test(x)||(x.length<60&&(/^\s*<[^<>]{3,56}>\s*$/.test(x)||/(omitid[oa]|ocult[oa]|ocultad[oa]|omise?s?|absente?|weggelassen|ausgeschlossen|omess[oaie])\s*>?\s*$/i.test(x)));}
 
 /* ---------- metrics ---------- */
 var FW={};
@@ -635,6 +641,229 @@ var FW={};
  ["no not never don't dont can't cant won't isn't didn't nunca ni tampoco"],
  ["all some many much few more most less any every mucho poco m\u00e1s menos todos algunos cada"]
 ].forEach(function(g,ci){g[0].split(" ").forEach(function(t){if(FW[t]==null){FW[t]=ci;}});});
+/* ---------- languages ----------
+   Timings work in any language. The parts that read words know English and Spanish (the base lists)
+   plus Portuguese, French, German and Italian (the lists below, switched on only when the chat uses them).
+   For any other language those parts are left out instead of guessed. */
+var LANGN={en:"English",es:"Spanish",pt:"Portuguese",fr:"French",de:"German",it:"Italian",nl:"Dutch",tr:"Turkish",pl:"Polish",id:"Indonesian",sv:"Swedish",ro:"Romanian"};
+var SUPPORTED={en:1,es:1,pt:1,fr:1,de:1,it:1};
+var STOPW={
+ en:"the and you that was for are with have this not but what your just know like about would there when they will can't don't i'm it's what's did how get got really yeah okay going think want from been were them then too thanks",
+ es:"que de no la el en es y los se lo por con para una está pero como más yo ya muy también te mi tú si cuando bien todo esta eso gracias porque tengo hola bueno ahora nada estoy vamos",
+ pt:"que não nao de o a e é um uma para pra com você voce vc mas muito também tambem tá está isso meu minha bem já mais tudo obrigado obrigada sim então entao agora tenho estou vou foi ele ela aqui hoje amanhã bom",
+ fr:"le la les de des et est un une que pas je tu il elle on nous vous pour dans ce ça qui mais avec sur oui non c'est j'ai très bien merci aussi tout suis fait quoi comme plus alors moi toi trop",
+ de:"der die das und ich du nicht ist ein eine es mit auf für aber auch so wie was noch dann wir sie er hab habe bin bist ja nein mal schon wenn dass oder kann danke gut heute morgen mir dir",
+ it:"che di non è e la il un una per sono ma mi ti si ho hai con come anche io tu lo le più cosa bene grazie sì poi allora tutto questo quando oggi domani va fatto ciao molto",
+ nl:"de het een en ik je niet is dat van op voor met maar ook wat nog dan wel heb ben jij zijn naar bij aan er goed dank hoe waar geen mij jou heel even gewoon",
+ tr:"bir ve bu ben sen için çok ama de da ne var yok mi mı evet hayır tamam şimdi nasıl değil gibi daha kadar ile bana sana iyi teşekkürler bugün yarın",
+ pl:"nie to się na jest że do jak ale co tak za czy ja ty mi ci już tylko jeszcze bardzo dzięki dobrze mam masz będę jutro dziś",
+ id:"yang dan di aku kamu tidak ini itu ya ada sama untuk dengan juga sudah bisa kalau mau apa saja lagi nggak gak udah iya terima kasih besok",
+ sv:"och jag det är att du inte en på har för med som men så vi kan ska om vad tack bra nu från där här också mig dig",
+ ro:"și nu de la este că în pe cu ce mai eu tu sunt am ai da dar foarte bine mulțumesc acum când pentru"
+};
+var STOPIDX=null;
+var SCRIPTS=[[0x370,0x3ff,"Greek"],[0x400,0x4ff,"a language in Cyrillic script"],[0x590,0x5ff,"Hebrew"],[0x600,0x6ff,"a language in Arabic script"],[0x900,0x97f,"Hindi or a related language"],[0xe00,0xe7f,"Thai"],[0x1100,0x11ff,"Korean"],[0x3040,0x30ff,"Japanese"],[0x3130,0x318f,"Korean"],[0x4e00,0x9fff,"Chinese"],[0xac00,0xd7af,"Korean"]];
+function detectLang(msgs){
+  var out={main:"en",name:null,ok:true,use:[],latin:1},l;
+  if(!STOPIDX){STOPIDX={};for(l in STOPW){STOPW[l].split(" ").forEach(function(w){(STOPIDX[w]=STOPIDX[w]||[]).push(l);});}}
+  var M=msgs.filter(function(m){return !isMedia(m.text)&&!isCall(m.text);}),step=Math.max(1,Math.floor(M.length/3000));
+  var sc={},tot=0,latin=0,score={},uniq={},seen={},tokens=0,vocab={},nv=0,i,k;
+  for(i=0;i<M.length;i+=step){
+    var t=M[i].text.toLowerCase().replace(/\u2019/g,"'");if(t.length>400){t=t.slice(0,400);}
+    if(/https?:\/\//.test(t)){t=t.replace(/https?:\/\/\S+/g," ");}
+    for(k=0;k<t.length;k++){var c=t.charCodeAt(k);
+      if(c<0x250){if((c>=97&&c<=122)||c>=0xc0){latin++;tot++;}continue;}
+      for(var s=0;s<SCRIPTS.length;s++){if(c>=SCRIPTS[s][0]&&c<=SCRIPTS[s][1]){sc[SCRIPTS[s][2]]=(sc[SCRIPTS[s][2]]||0)+1;tot++;break;}}}
+    var tk=t.match(/[a-z\u00c0-\u024f']+/g)||[];
+    for(k=0;k<tk.length;k++){tokens++;if(nv<200&&!vocab[tk[k]]){vocab[tk[k]]=1;nv++;}var ls=STOPIDX[tk[k]];if(ls){for(var q=0;q<ls.length;q++){score[ls[q]]=(score[ls[q]]||0)+1/ls.length;(seen[ls[q]]=seen[ls[q]]||{})[tk[k]]=1;}if(ls.length===1){uniq[ls[0]]=(uniq[ls[0]]||0)+1;}}}
+  }
+  if(tot<300){return out;}
+  out.latin=latin/tot;
+  /* a chat with almost no vocabulary (stickers, one word answers) cannot be judged: leave the word parts on */
+  if(out.latin>=0.6&&nv<80){return out;}
+  function distinct(x){return seen[x]?Object.keys(seen[x]).length:0;}
+  var best=null,sup=0,bestSup=null;
+  for(l in score){if(!best||score[l]>score[best]){best=l;}if(SUPPORTED[l]){sup+=score[l];if(!bestSup||score[l]>score[bestSup]){bestSup=l;}}}
+  if(out.latin<0.6){
+    var top=null;for(l in sc){if(!top||sc[l]>sc[top]){top=l;}}
+    if(top==="Chinese"&&(sc.Japanese||0)>0.05*sc.Chinese){top="Japanese";}
+    out.ok=false;out.main=null;out.name=top||"a language this page does not read yet";
+  }else if(!best||!SUPPORTED[best]||sup/Math.max(1,tokens)<0.1||distinct(best)<12){
+    out.ok=false;out.main=null;out.name=best&&!SUPPORTED[best]&&distinct(best)>=12?LANGN[best]:"a language this page does not read yet";
+  }else{out.main=best;out.name=LANGN[best];}
+  if(bestSup){var ref=Math.max(1,uniq[bestSup]||0);for(l in SUPPORTED){if((uniq[l]||0)>=0.2*ref&&(uniq[l]||0)>=15&&distinct(l)>=8){out.use.push(l);}}}
+  return out;
+}
+/* "~" stands for any word ending. Lists are joined for the languages in use and matched on whole words. */
+var LX={
+ aff:{
+  pt:"te amo|amo-te|amo você|saudades?|obrigad[oa]|valeu|orgulho de (você|ti)|kkk+|rsrs+|beij(o|os|inhos?)|bjs",
+  fr:"je t'aime|tu me manques|merci|fi[eè]re? de toi|bisous?|bises?|mdr+|ptdr+|câlins?",
+  de:"ich liebe dich|hab dich lieb|hdl|vermiss~ dich|du fehlst mir|danke|stolz auf dich|kuss|küsschen|bussi",
+  it:"ti amo|ti voglio bene|tvb|mi manchi|grazie|orgoglios[oa] di te|baci?|bacione|ahah+"},
+ strong:{
+  pt:"te amo|amo-te|amo você|meu amor|minha vida|amorzinho|moz[ãa]o|mo[zs]inho|meu bem|bom dia,? (meu )?amor|boa noite,? (meu )?amor|sonha comigo|quero te beijar|meu namorado|minha namorada",
+  fr:"je t'aime|mon amour|mon c(oe|œ)ur|mon b[ée]b[ée]|mon ange|bonne nuit mon (amour|c(oe|œ)ur)|fais de beaux r[êe]ves|j'ai envie de toi|tu me manques trop|h[âa]te de te voir|mon homme|ma femme",
+  de:"ich liebe dich|mein schatz|schatzi|liebling|mein engel|mein herz|gute nacht,? (mein )?(schatz|liebling)|guten morgen,? (mein )?(schatz|liebling)|träum (was )?(schönes|süß)|vermisse dich so|kuscheln|ich will dich|freu mich (so )?auf dich",
+  it:"ti amo|amore mio|vita mia|buonanotte amore|buongiorno amore|sogni d'oro|ho voglia di te|mi manchi tantissimo|non vedo l'ora di vederti|il mio ragazzo|la mia ragazza|coccole"},
+ buddy:{
+  pt:"mano|cara|parceir[oa]|amig[oa]s?|migas?|mermão|véi|vei|gajo|brother",
+  fr:"mec|fr[ée]rot|poto|pote|gros|wesh|frr|ma gueule|ma belle|ma poule|la miss",
+  de:"alter|digga|diggi|dicker|brudi|kumpel|jungs|mädels|süße",
+  it:"fra|frate|fratm|zio|raga|vecchio mio|compare|socio|amic[oa]"},
+ kin:{
+  es:"mamá|papá|los papás",
+  pt:"mãe|mamãe|mainha|pai|papai|painho|vó|vô|avó|avô|vovó|vovô",
+  fr:"maman|papa|mamie|papi|papy|mémé|pépé|grand-mère|grand-père|les parents",
+  de:"mama|papa|mutti|vati|mutter|vater|oma|opa",
+  it:"mamma|papà|babbo|nonna|nonno"},
+ poss:{
+  es:"mi|tu|su",
+  pt:"minha|meu|tua|teu|sua|seu",
+  fr:"ma|mon|ta|ton|sa|son|mes|tes|ses",
+  de:"meine[rmn]?|mein|deine[rmn]?|dein|seine[rmn]?|ihre[rmn]?",
+  it:"mia|mio|tua|tuo|sua|suo"},
+ greet:{
+  pt:"oi|olá|ola|obrigad[oa]|ok|sim|não|nao|te amo|beijo|tchau|bom dia|boa noite",
+  fr:"salut|coucou|bonjour|bonsoir|merci|ok|oui|non|je t'aime|bisous|bonne nuit",
+  de:"hallo|hi|hey|danke|ok|ja|nein|hab dich lieb|gute nacht|guten morgen|tschüss",
+  it:"ciao|grazie|ok|sì|si|no|ti voglio bene|buonanotte|buongiorno"},
+ addr:{
+  pt:"mãe|mamãe|mainha|pai|papai|painho|filh[oa]|filhot[ae]|vó|vô|vovó|vovô|tia|tio",
+  fr:"maman|papa|mamie|papi|papy|mémé|pépé|tata|tonton|ma fille|mon fils|fiston",
+  de:"mama|papa|mutti|vati|mami|papi|oma|opa|tante|onkel",
+  it:"mamma|papà|papa|babbo|nonna|nonno|zia|zio|figli[oa] mi[oa]"},
+ mar:{
+  pt:"marido|esposa|minha mulher|meu esposo|as crianças|os miúdos|nossos filhos|creche|hipoteca|sogr[oa]s?|aniversário de casamento",
+  fr:"mon mari|ma femme|mon époux|mon épouse|les enfants|les petits|la crèche|la nounou|beaux-parents|belle-mère|beau-père|anniversaire de mariage",
+  de:"mein mann|meine frau|ehemann|ehefrau|die kinder|die kleinen|kita|kindergarten|hypothek|schwiegereltern|schwiegermutter|schwiegervater|hochzeitstag",
+  it:"mio marito|mia moglie|i bambini|i bimbi|i nostri figli|l'asilo|il nido|il mutuo|suocer[aoi]|anniversario di matrimonio"},
+ work:{
+  pt:"reunião|prazo|relatório|gerente|chefe|projeto|apresentação|a equipe|a equipa|escritório|plantão|turno|escala",
+  fr:"réunion|deadline|rapport|manager|mon chef|ma cheffe|le patron|projet|présentation|l'équipe|le bureau|planning|dossier",
+  de:"meeting|besprechung|frist|bericht|chef|chefin|vorgesetzte[rn]?|projekt|präsentation|das team|büro|schicht|dienstplan",
+  it:"riunione|scadenza|report|responsabile|il capo|progetto|presentazione|il team|la squadra|ufficio|turno"},
+ cli:{
+  pt:"fatura|nota fiscal|orçamento|cotação|proposta|contrato|tabela de preços|honorários|comissão|pagamento|pago|depósito|transferência|sua conta|abertura de conta|extrato|documentos?|assinatura|assinar|pedido|entrega|carteira|prezad[oa]|atenciosamente|cordialmente|em anexo|nossos serviços",
+  fr:"facture|devis|proposition|contrat|tarifs?|honoraires|commission|paiement|payé|acompte|virement|votre compte|ouverture de compte|relevé|documents?|signature|signer|commande|livraison|portefeuille|cordialement|bien à vous|veuillez trouver|ci-joint|en pièce jointe|nos services",
+  de:"rechnung|angebot|kostenvoranschlag|vertrag|preisliste|gebühr(en)?|honorar|provision|zahlung|bezahlt|anzahlung|überweisung|ihr konto|kontoeröffnung|kontoauszug|unterlagen|dokumente?|unterschrift|unterschreiben|bestellung|lieferung|portfolio|depot|sehr geehrte[r]?|mit freundlichen grüßen|freundliche grüße|mfg|im anhang|anbei|unsere leistungen",
+  it:"fattura|preventivo|proposta|contratto|listino|tariff[ae]|onorario|commissione|pagamento|pagato|acconto|bonifico|il suo conto|apertura (del )?conto|estratto conto|documenti?|firmare|ordine|consegna|portafoglio|egregio|cordiali saluti|distinti saluti|in allegato|allego|i nostri servizi"},
+ plan:{
+  pt:"hoje à noite|hoje a noite|amanhã|sábado|domingo|sexta|fim de semana|fds|vamos|bora|partiu|quer (ir|vir|sair)|queres (ir|vir|sair)|tá livre|estás livre|a gente se vê|nos vemos|café|cerveja|chopp?|jantar|almoçar|almoço|rolê",
+  fr:"ce soir|demain|samedi|dimanche|vendredi|ce week-?end|on se (voit|fait|retrouve)|ça te dit|tu veux (venir|aller|sortir)|t'es (dispo|libre)|tu es (dispo|libre)|un café|un verre|l'apéro|apéro|dîner|déjeuner|resto",
+  de:"heute abend|morgen|samstag|sonntag|freitag|wochenende|lass uns|wollen wir|sollen wir|hast du (lust|zeit)|lust auf|bock auf|treffen|kaffee|bier|essen gehen|abendessen|mittagessen",
+  it:"stasera|domani|sabato|domenica|venerdì|weekend|fine settimana|ci vediamo|andiamo|ti va|vuoi (venire|andare|uscire)|sei liber[oa]|usciamo|caffè|aperitivo|birra|cena|pranzo"},
+ ritual:{
+  pt:"bom dia|boa noite|dorme bem|durma bem|bons sonhos|sonha comigo",
+  fr:"bonjour|bonne journée|bonne nuit|dors bien|fais de beaux rêves|beaux rêves",
+  de:"guten morgen|gute nacht|schlaf gut|schlaf schön|träum (was )?(schönes|süß)|moin|nachti|gn8",
+  it:"buongiorno|buon giorno|buonanotte|buona notte|dormi bene|sogni d'oro|notte"},
+ chores:{
+  pt:"casa|jantar|almoço|compras|mercado|supermercado|buscar|escola|creche|as crianças|os miúdos|contas?|aluguel|renda|o carro|consulta|que horas|a caminho|tô chegando|estou a chegar|atrasad[oa]|leite|pão|roupa",
+  fr:"maison|dîner|déjeuner|courses|supermarché|récupérer|école|crèche|les enfants|factures?|loyer|la voiture|rendez-vous|rdv|quelle heure|j'arrive|en route|en retard|lait|pain|lessive|linge",
+  de:"zuhause|zu hause|abendessen|mittagessen|einkaufen|einkauf|supermarkt|abholen|schule|kita|die kinder|rechnung(en)?|miete|das auto|termin|wie viel uhr|bin unterwegs|bin gleich da|verspäte|milch|brot|wäsche",
+  it:"casa|cena|pranzo|spesa|supermercato|scuola|asilo|i bambini|bollett[ae]|affitto|la macchina|appuntamento|a che ora|che ore|sto arrivando|arrivo|in ritardo|latte|pane|lavatrice|bucato"},
+ tender:{
+  pt:"te amo|amo-te|amo você|saudades?|meu amor|orgulho de (você|ti)|obrigad[oa] por",
+  fr:"je t'aime|tu me manques|mon amour|fi[eè]re? de toi|merci (pour|de|d')",
+  de:"ich liebe dich|hab dich lieb|vermisse dich|du fehlst mir|mein schatz|stolz auf dich|danke (für|dass)",
+  it:"ti amo|ti voglio bene|mi manchi|amore mio|orgoglios[oa] di te|grazie (per|di)"},
+ th0:{
+  pt:"emprego novo|novo emprego|meu trabalho|no trabalho|do trabalho|depois do trabalho|muito trabalho|trabalhando até tarde|escritório|meu chefe|minha chefe|entrevista|prazo|promoção|hora extra|carreira|colegas?|plantão|turno",
+  fr:"nouveau (travail|boulot|poste)|mon (travail|boulot|taf)|au (travail|boulot|taf|bureau)|après le (travail|boulot)|trop de (travail|boulot)|je bosse tard|bureau|mon chef|ma cheffe|mon patron|entretien|deadline|promotion|heures sup|carrière|collègues?",
+  de:"neuer job|neue stelle|mein job|meine arbeit|auf (der )?arbeit|bei der arbeit|nach der arbeit|so viel arbeit|zu viel arbeit|überstunden|büro|mein chef|meine chefin|vorstellungsgespräch|deadline|frist|beförderung|karriere|kolleg(e|en|in|innen)|schicht",
+  it:"nuovo lavoro|il mio lavoro|al lavoro|dal lavoro|dopo il lavoro|troppo lavoro|tanto lavoro|lavoro fino a tardi|ufficio|il mio capo|colloquio|scadenza|promozione|straordinari|carriera|collegh[ie]|collega|turno"},
+ th1:{
+  pt:"ocupad[oa]|sem tempo|não tenho tempo|nao tenho tempo|correria|agenda|remarc~|desmarc~|cancel~|não vou conseguir|não consigo ir|atrasad[oa]|muito longe|distância|semana que vem|outro dia|fica para (a )?próxima",
+  fr:"occupée?|débordée?|pas le temps|pas de temps|emploi du temps|planning|report~|décal~|annul~|je (ne )?peux pas venir|je pourrai pas|en retard|trop loin|à distance|un autre jour|une autre fois",
+  de:"beschäftigt|keine zeit|zu wenig zeit|stress(ig)?|terminkalender|verschieb~|verschoben|absag~|abgesagt|schaff(e)? es nicht|kann nicht kommen|verspät~|zu weit|fernbeziehung|pendeln|ein andermal|anderen tag",
+  it:"impegnat[oa]|occupat[oa]|non ho tempo|senza tempo|poco tempo|agenda|rimand~|spostiamo|spostare|annull~|disd~|non ce la faccio|non riesco a venire|in ritardo|troppo lontano|a distanza|settimana prossima|un altro giorno|un'altra volta"},
+ th2:{
+  pt:"desculpa|desculpe|perdão|me perdoa|chatead[oa]|brava|irritad[oa]|brig~|discuss~|discut~|magoad[oa]|magoou|mal-entendido|você sempre|você nunca|tu nunca|ignor~|decepcion~|desiludid[oa]|frustr~|precisamos conversar|temos (de|que) (conversar|falar)|não é justo",
+  fr:"désolée?|pardon|je m'excuse|excuse-moi|énervée?|fâchée?|en colère|agac~|disput~|engueul~|blessée?|malentendu|tu (fais|es|dis) toujours|tu m'ignores|ignor~|déçue?|frustr~|il faut qu'on parle|on doit parler|pas juste",
+  de:"sorry|entschuldig~|tut mir leid|sauer|wütend|genervt|nervst|streit~|gestritten|verletzt|missverständnis|du (machst|bist|sagst) immer|immer du|ignorier~|enttäusch~|frustrier~|wir müssen reden|nicht fair|unfair",
+  it:"scusa|scusami|mi dispiace|perdonami|arrabbiat[oa]|incazzat[oa]|nervos[oa]|infastidit[oa]|litig~|discuss~|discut~|ferit[oa]|malinteso|tu sempre|mi ignori|ignor~|delus[oa]|frustrat[oa]|dobbiamo parlare|non è giusto"},
+ th3:{
+  pt:"o futuro|nosso futuro|longo prazo|casar~|casamento|filhos|ter filhos|uma família|morar junt[oa]s|mudar (de|para)|a sério|não estou pront[oa]|para onde (isso|isto) vai|o que (somos|nós somos)|coisas diferentes",
+  fr:"l'avenir|notre avenir|le futur|long terme|se marier|mariage|des enfants|une famille|se poser|emménag~|déménag~|visa|m'engager|s'engager|engagement|sérieux entre nous|pas prête?|où (ça|on) va|on est quoi|qu'est-ce qu'on est|choses différentes",
+  de:"die zukunft|unsere zukunft|langfristig|heirat~|hochzeit|kinder (haben|kriegen|bekommen)|kinderwunsch|eine familie|zusammenziehen|wegziehen|umziehen|umzug|visum|verbindlich~|festlegen|was ernstes|nicht bereit|wohin (das|es) führt|was sind wir|was (ist|wird) das mit uns|unterschiedliche (dinge|wege|vorstellungen)",
+  it:"il futuro|nostro futuro|lungo termine|sposar~|matrimonio|figli|una famiglia|convivere|andare a vivere insieme|trasferir~|impegnarmi|impegnarti|impegnarsi|una cosa seria|non sono pront[oa]|dove stiamo andando|cosa siamo|cose diverse"},
+ th4:{
+  pt:"dinheiro|grana|aluguel|salário|dívidas?|sem grana|sem dinheiro|dividir a conta|te pago depois|muito caro|caríssim[oa]",
+  fr:"argent|thune|fric|loyer|trop chère?|les moyens|salaire|dettes?|je te dois|tu me dois|fauchée?|à sec|partager l'addition|rembours~",
+  de:"geld|miete|teuer|leisten|gehalt|schulden|schulde(st)? (dir|mir)|pleite|rechnung teilen|zurückzahlen",
+  it:"soldi|denaro|affitto|costos[oa]|troppo caro|permetter(mi|ci|ti)|stipendio|debit[oi]|ti devo|mi devi|al verde|dividere il conto|restituir~"},
+ th5:{
+  pt:"entediad[oa]|tédio|chato|chata|mesma coisa|rotina|nada de novo|nada para (dizer|falar|conversar)|monoton~|monóton~|mesmice",
+  fr:"ennui~|je m'ennuie|ennuyeu(x|se)|chiant|la même chose|routine|rien de nouveau|rien à (dire|se dire|raconter)|monoton~|l'étincelle|la flamme",
+  de:"langweil~|langeweile|immer das gleiche|immer dasselbe|routine|alltag|nichts neues|nichts zu (sagen|erzählen|reden)|monoton|eintönig|der funke",
+  it:"annoiat[oa]|noia|noios[oa]|la stessa cosa|sempre uguale|routine|niente di nuovo|niente da (dire|dirci|raccontare)|monoton~|la scintilla"},
+ th6:{
+  pt:"meu ex|minha ex|teu ex|tua ex|seu ex|sua ex|outra pessoa|outro (cara|homem)|outra (mulher|menina|garota)|ciúmes?|ciument[oa]|trai[çc][ãa]o|traiu|trair|tinder|bumble|saindo com (alguém|outr[oa])|infiel",
+  fr:"mon ex|ton ex|quelqu'un d'autre|un autre (mec|homme|gars)|une autre (fille|femme|meuf)|jalou~|tu m'as trompée?|tu me trompes|tinder|bumble|tu vois quelqu'un|infid[èe]le",
+  de:"mein ex|meine ex|dein ex|deine ex|jemand anderen|jemand anderes|einen anderen (mann|typen|kerl)|eine andere frau|eifersücht~|eifersucht|betrog~|betrüg~|fremdgeh~|fremdgegangen|tinder|bumble|untreu",
+  it:"il mio ex|la mia ex|il tuo ex|la tua ex|qualcun altro|un altro (ragazzo|uomo|tipo)|un'altra (ragazza|donna|tipa)|gelos~|tradit[oaie]|tradir~|tradimento|tinder|bumble|ti vedi con|infedele"},
+ seA:{
+  pt:"trai[çc][ãa]o|traiu|trair|traindo|me traíste|outra pessoa|outro (cara|homem)|outra (mulher|garota|menina)|saindo com (alguém|outr[oa])|conheci (alguém|uma pessoa)|dormiu com|meu ex|minha ex|teu ex|tua ex|seu ex|sua ex|infiel",
+  fr:"tu m'as trompée?|tu me trompes|trompée? avec|quelqu'un d'autre|un autre (mec|homme|gars)|une autre (fille|femme|meuf)|tu vois quelqu'un|j'ai rencontré quelqu'un|couché avec|mon ex|ton ex|infid[èe]le",
+  de:"betrog~|betrüg~|fremdgeh~|fremdgegangen|jemand anderen|jemand anderes|jemanden kennengelernt|einen anderen (mann|typen|kerl)|eine andere frau|mit (ihm|ihr) geschlafen|mein ex|meine ex|dein ex|deine ex|untreu",
+  it:"mi hai tradit[oa]|tradimento|tradir~|mi tradisci|qualcun altro|un altro (ragazzo|uomo|tipo)|un'altra (ragazza|donna|tipa)|ti vedi con|ho conosciuto (qualcuno|una persona)|sei andat[oa] a letto con|il mio ex|la mia ex|il tuo ex|la tua ex|infedele"},
+ seJ:{
+  pt:"ciúmes?|ciument[oa]|não confio|nao confio|confiar em (você|ti)|mentir~|mentiu|mentira|mentiros[oa]|escondendo|quem (é|era) (ele|ela|ess[ea])|com quem (você )?(estava|estavas|tava)",
+  fr:"jalou~|pas confiance|te faire confiance|mentir|menti|mens|mensonges?|menteu(r|se)|tu (me )?caches|c'est qui (lui|elle|ce|cette)|c'était qui|t'étais avec qui|avec qui (tu étais|t'étais)",
+  de:"eifersücht~|eifersucht|vertraue dir nicht|kein vertrauen|dir vertrauen|gelogen|lügst|lüge[nr]?|verheimlich~|wer (ist|war) (er|sie|das)|mit wem warst du",
+  it:"gelos~|non mi fido|fidarmi di te|bugi[ae]|bugiard[oa]|mentit[oa]|mi nascondi|chi (è|era) (lui|lei|quell[oa])|con chi eri"},
+ seK:{
+  pt:"cancel~|desmarc~|remarc~|não vou conseguir|não consigo ir|não posso hoje|hoje não dá|outro dia|fica para (a )?próxima",
+  fr:"annul~|report~|décal~|je (ne )?peux pas venir|je pourrai pas|pas ce soir|un autre jour|une autre fois",
+  de:"absag~|abgesagt|verschieb~|verschoben|schaff(e)? es nicht|kann heute nicht|heute nicht|ein andermal|anderen tag|vielleicht nächste woche",
+  it:"annull~|disd~|rimand~|spostiamo|non ce la faccio|non riesco a venire|stasera no|non stasera|un altro giorno|un'altra volta"},
+ tense:{
+  pt:"desculp~|chatead~|irritad~|não quero|preciso de espaço|um tempo|terminar|precisamos conversar|cansad~ de|sempre|nunca|tanto faz|ocupad~|cancel~|sentimentos|pensar em nós|não estou feliz|magoad~|brig~|discuss~",
+  fr:"désolée?|énervée?|fâchée?|en colère|je (ne )?veux (pas|plus)|besoin d'espace|une pause|rompre|il faut qu'on parle|marre de|toujours|jamais|peu importe|occupée?|annul~|sentiments|réfléchir à nous|pas heureu(x|se)|blessée?|disput~",
+  de:"entschuldig~|tut mir leid|sauer|wütend|genervt|will nicht|brauche (abstand|zeit|raum)|pause|schluss|trennung|trennen|wir müssen reden|immer|nie|egal|beschäftigt|abgesagt|absag~|gefühle|über uns nachdenken|nicht glücklich|verletzt|streit~",
+  it:"scusa~|mi dispiace|arrabbiat~|non voglio|ho bisogno di (spazio|tempo)|una pausa|lasciarci|dobbiamo parlare|stanc~ di|sempre|mai|fa lo stesso|impegnat~|annull~|sentimenti|pensare a noi|non sono felice|ferit~|litig~"}
+};
+/* small everyday words, in the same nine groups as FW, for the "Talking alike" measure */
+var FWL={
+ pt:["eu tu você voce vc ele ela nós vocês eles elas me te se lhe meu minha teu tua seu sua nosso nossa mim ti","isso isto aquilo esse essa este esta algo nada tudo que quem qual","o a os as um uma uns umas","de em por para pra com sem sobre desde até no na do da nos nas dos das ao à","é são está estou estava era foi ser estar tenho tem tinha vai vou pode posso deve há","muito já também agora aqui ali ainda sempre tão só então lá","e ou mas porque quando embora enquanto","não nao nunca nem jamais","todo toda todos alguns algumas muitos pouco mais menos cada qualquer"],
+ fr:["je j tu il elle on nous vous ils elles me m te t se s moi toi lui mon ma mes ton ta tes son sa ses notre votre leur","ce c ça cela ceci quelque rien tout que qu qui quoi quel quelle","le la les un une des l du","de d à en dans sur pour avec sans par chez vers depuis au aux","suis es est sommes êtes sont étais était ai as a avons avez ont vais vas va peux peut dois doit sera","très vraiment juste aussi maintenant ici là encore toujours déjà alors trop bien","et ou mais parce car si quand donc comme","ne n pas jamais non plus ni","tous toutes beaucoup peu moins plusieurs chaque quelques aucun"],
+ de:["ich du er sie es wir ihr mich dich sich mir dir uns euch mein meine dein deine sein seine unser","das dies diese dieser etwas nichts alles was wer welche man","der die den dem des ein eine einen einem einer","von in an auf zu für mit aus bei nach über um vor durch im am zum zur","bin bist ist sind seid war waren habe hast hat haben hatte werde wirst wird werden kann kannst muss soll will","sehr wirklich nur so auch jetzt dann hier da noch immer schon mal doch halt","und oder aber weil wenn dass obwohl denn als","nicht nie kein keine keinen nein","alle viele viel wenig mehr weniger jeder jede einige"],
+ it:["io tu lui lei noi voi loro mi ti si ci vi mio mia tuo tua suo sua nostro nostra me te","questo questa quello quella ciò qualcosa niente nulla tutto che chi cosa quale","il lo la i gli le un uno una l","di a da in con su per tra fra del della dei nel nella al alla sul","sono sei è siamo siete ero era ho hai ha abbiamo hanno vado vai va posso puoi può devo deve sarà","molto davvero solo così anche adesso ora poi qui lì ancora sempre già proprio","e o ma perché se quando mentre però quindi","non mai né no nessuno","tutti tutte molti tanto tanti poco più meno ogni alcuni qualche"]
+};
+var XL={},XKEY=null,FWX=FW;
+function wrx(body,post,flags){
+  body=body.replace(/~/g,"\\p{L}*").replace(/'/g,"['\u2019]");
+  return new RegExp("(?:^|[^\\p{L}\\p{N}])(?:"+body+")"+(post==null?"(?![\\p{L}\\p{N}])":post),"iu"+(flags||""));
+}
+function useLangs(ls){
+  var a=(ls||[]).filter(function(l){return l!=="en"&&SUPPORTED[l];}).sort(),key=a.join(",");
+  if(key===XKEY){return;}
+  XKEY=key;XL={};FWX=FW;
+  if(!a.length){return;}
+  function J(cat){return a.map(function(l){return LX[cat]&&LX[cat][l];}).filter(Boolean).join("|");}
+  try{
+    ["aff","strong","buddy","mar","work","cli","ritual","chores","tender","th0","th1","th2","th3","th4","th5","th6","seA","seJ","seK","tense"].forEach(function(c){var b=J(c);if(b){XL[c]=wrx(b);}});
+    var b=J("plan");if(b){XL.plan=wrx(b,"(?![\\p{L}\\p{N}])[^?]*\\?");}
+    var kin=J("kin"),poss=J("poss"),greet=J("greet"),addr=J("addr"),q=function(s){return s.replace(/'/g,"['\u2019]");};
+    if(kin){XL.parent=new RegExp("(?:^|[^\\p{L}\\p{N}])(?:("+(q(poss)||"\\u0000")+")\\s+)?(?:"+q(kin)+")(?![\\p{L}\\p{N}])","giu");}
+    if(addr){XL.fam=new RegExp("(?:^|[,!?.]\\s*|(?:^|[^\\p{L}\\p{N}])(?:"+(q(greet)||"\\u0000")+")\\s+)(?:"+q(addr)+")\\s*(?:[,!?.]|$)","iu");}
+  }catch(e){XL={};}
+  var ex=a.filter(function(l){return FWL[l];});
+  if(ex.length){FWX={};for(var k in FW){FWX[k]=FW[k];}ex.forEach(function(l){FWL[l].forEach(function(g,ci){g.split(" ").forEach(function(t){if(FWX[t]==null){FWX[t]=ci;}});});});}
+  XL.split=a.indexOf("fr")>=0||a.indexOf("it")>=0;
+  XL.de=a.indexOf("de")>=0;
+}
+function lx(cat,rx,t){return rx.test(t)||(XL[cat]?XL[cat].test(t):false);}
+function langOf(D){useLangs(D&&D.lang?D.lang.use:[]);}
+function noWords(D){return !!(D&&D.lang&&!D.lang.ok);}
+var AFFU=/ㅋㅋ|ㅎㅎ|哈哈|呵呵|笑|хаха|ахах|ههه|😅|😆|😁/;
+var FAMNAME=/^(mãe|mamãe|mae|pai|papai|vó|vô|vovó|vovô|maman|mamie|papi|papy|mama|papa|mutti|vati|oma|opa|mamma|babbo|nonna|nonno|tante|oncle|onkel|zia|zio|tia|tio)(\s|$)/i;
+function otherWords(t){
+  var n=0,m=t.match(/[Ͱ-෿ᄀ-ᇿ가-힯]+/g),i;if(m){n+=m.length;}
+  m=t.match(/[฀-๿぀-ヿ一-鿿]+/g);if(m){for(i=0;i<m.length;i++){n+=Math.ceil(m[i].length/2);}}
+  return n;
+}
 function analyse(msgs,me){
   var count={};msgs.forEach(function(m){count[m.who]=(count[m.who]||0)+1;});
   var names=Object.keys(count).sort(function(a,b){return count[b]-count[a];}).slice(0,2);
@@ -642,6 +871,7 @@ function analyse(msgs,me){
   if(count[names[0]]+count[names[1]]<0.88*msgs.length){throw new Error("This looks like a group chat. WhatHappened compares two people, so export a chat between just the two of you.");}
   if(me&&names[1]===me){names.reverse();}
   msgs=msgs.filter(function(m){return names.indexOf(m.who)>=0;});
+  var LG=detectLang(msgs);useLangs(LG.use);
   var sn=names.map(function(x){return x.replace(/^[^A-Za-z\u00C0-\uFFFF]+/,"").split(/\s+/)[0];});if(!sn[0]||!sn[1]||sn[0]===sn[1]){sn=names.slice();}
   var w0=monday(msgs[0].t),wN=monday(msgs[msgs.length-1].t),weeks=[],idx={},d=new Date(w0);
   while(d<=wN){idx[iso(d)]=weeks.length;weeks.push({start:new Date(d),n:[0,0],rep:[[],[]],first:[0,0],days:{},words:[0,0],txt:[0,0],media:[0,0],calls:0,fw:[[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0]]});d.setDate(d.getDate()+7);}
@@ -651,7 +881,7 @@ function analyse(msgs,me){
   msgs.forEach(function(m){
     var p=names.indexOf(m.who),w=weeks[idx[iso(monday(m.t))]];
     w.n[p]++;w.days[iso(m.t)]=1;
-    if(isCall(m.text)){w.calls++;}else if(isMedia(m.text)){w.media[p]++;}else{var tk=m.text.toLowerCase().match(/[a-z\u00e0-\u00ff']+/g)||[];w.words[p]+=tk.length;w.txt[p]++;for(var ti=0;ti<tk.length;ti++){var ci=FW[tk[ti]];if(ci!=null){w.fw[p][ci]++;}}}if(AFF.test(m.text)){w.aff[p]++;}if(m.text.indexOf("?")>=0){w.q[p]++;}
+    if(isCall(m.text)){w.calls++;}else if(isMedia(m.text)){w.media[p]++;}else{var low=m.text.toLowerCase().replace(/\u2019/g,"'"),tk=low.match(/[a-z\u00df-\u024f']+/g)||[];w.words[p]+=tk.length+otherWords(low);w.txt[p]++;for(var ti=0;ti<tk.length;ti++){var ci=FWX[tk[ti]];if(ci!=null){w.fw[p][ci]++;}else if(XL.split&&tk[ti].indexOf("'")>0){var pa=tk[ti].split("'");for(var pj=0;pj<pa.length;pj++){ci=FWX[pa[pj]];if(ci!=null){w.fw[p][ci]++;}}}}}if(AFF.test(m.text)||AFFU.test(m.text)||(XL.aff&&XL.aff.test(m.text))){w.aff[p]++;}if(/[?\uff1f\u061f]/.test(m.text)){w.q[p]++;}
     var dk=iso(new Date(m.t.getTime()-5*3600e3));
     if(!seenDay[dk]){seenDay[dk]=1;w.first[p]++;}
     if(prev&&prev.who!==m.who&&!isCall(m.text)&&!isCall(prev.text)){var g=(m.t-prev.t)/60000;if(g<720){w.rep[p].push(g);}}
@@ -721,7 +951,7 @@ function analyse(msgs,me){
     var p=ratio[0]>=ratio[1]?0:1;
     if(ratio[p]>1.5){slow={p:p,b:res[p].b,a:res[p].a};}
   }
-  return {gradual:gradual,names:sn,label:[sn[0]+(me?" (you)":""),sn[1]],me:me?0:null,full:names,msgs:msgs,weeks:weeks,change:change,signals:signals,slow:slow,count:[count[names[0]],count[names[1]]]};
+  return {lang:LG,gradual:gradual,names:sn,label:[sn[0]+(me?" (you)":""),sn[1]],me:me?0:null,full:names,msgs:msgs,weeks:weeks,change:change,signals:signals,slow:slow,count:[count[names[0]],count[names[1]]]};
 }
 
 /* ---------- softer hints: was the last stretch before the change the lowest ever? ---------- */
@@ -740,7 +970,7 @@ function softHints(D){
   [0,1].forEach(function(p){var nm=D.names[p];
     check(function(w){return [w.n[p],1];},"low",function(pc,l,m,ext){return {p:p,t:nm+" was writing less",d:"About "+Math.round(l)+" messages a week in the two months before, against a usual "+Math.round(m)+"."+(ext?" The lowest stretch of the whole chat.":"")};});
     check(function(w){return [w.first[p],1];},"low",function(pc,l,m,ext){return {p:p,t:nm+" started fewer days",d:"Wrote first on about "+r1(l)+" days a week, against a usual "+r1(m)+"."};});
-    check(function(w){return [w.aff[p],w.n[p]];},"low",function(pc,l,m){return {p:p,t:nm+" was less affectionate in writing",d:"Warm words, hearts and laughter were in "+Math.round(l*100)+"% of messages, against a usual "+Math.round(m*100)+"%."};});
+    check(function(w){return [w.aff[p],w.n[p]];},"low",function(pc,l,m){return {p:p,t:nm+" was less affectionate in writing",d:(noWords(D)?"Hearts and laughter":"Warm words, hearts and laughter")+" were in "+Math.round(l*100)+"% of messages, against a usual "+Math.round(m*100)+"%."};});
     check(function(w){return [w.q[p],w.n[p]];},"low",function(pc,l,m){return {p:p,t:nm+" asked fewer questions",d:"Questions were in "+Math.round(l*100)+"% of messages, against a usual "+Math.round(m*100)+"%."};});
     check(function(w){return [w.rep[p].reduce(function(a,b){return a+Math.min(b,120);},0),w.rep[p].length];},"high",function(pc,l,m){return {p:p,t:nm+" was taking longer to answer",d:"Average wait of about "+Math.round(l)+" minutes, against a usual "+Math.round(m)+"."};});
   });
@@ -759,9 +989,10 @@ var THEMES=[
 function wordThemes(D){
   var M=D.msgs,c=D.change,cut=c!=null?new Date(D.weeks[Math.max(0,c-6)].start):M[Math.floor(M.length*0.8)].t,mid=c!=null?D.weeks[c].start:M[M.length-1].t;
   var nLate=0,nBase=0;M.forEach(function(m){if(m.t>=cut){nLate++;}else{nBase++;}});
-  return THEMES.map(function(T){
+  langOf(D);
+  return THEMES.map(function(T,ti){
     var late=[],base=0;
-    M.forEach(function(m){if(isMedia(m.text)||isCall(m.text)||m.text.length>600){return;}if(T.rx.test(m.text)){if(m.t>=cut){late.push(m);}else{base++;}}});
+    M.forEach(function(m){if(isMedia(m.text)||isCall(m.text)||m.text.length>600){return;}if(T.rx.test(m.text)||(XL["th"+ti]&&XL["th"+ti].test(m.text))){if(m.t>=cut){late.push(m);}else{base++;}}});
     var rl=late.length/Math.max(1,nLate),rb=base/Math.max(1,nBase),lift=rb?rl/rb:(late.length?3:0);
     var s=Math.round(100*(1-Math.exp(-late.length/10))*(0.3+0.7*Math.min(1,lift/2.5)));
     late.sort(function(a,b){return Math.abs(a.t-mid)-Math.abs(b.t-mid);});
@@ -818,17 +1049,21 @@ var TRX={
 var STRONG=/\b(te amo|my love|mi amor|mi vida|amorcito|babe|bae|boyfriend|girlfriend|mi novi[oa]|polol[oa]|pololeando|sexy|cuddl\w+|kiss you|kissing you|besarte|good (morning|night),? (beautiful|handsome|gorgeous|my love|love)|buen(os)? d[ií]as? (mi )?amor|buenas noches (mi )?amor|our anniversary|date night|i want you|miss you so much|can'?t wait to see you|sleep well|sweet dreams|i love you)\b/i;
 var BUDDY=/\b(mate|dude|bro|bruh|buddy|pal|amig[oa]s?|we[oó]n|wn|compadre|comadre|hermano|sis|girlie?|hun|queen|bestie|lads?)\b/i;
 var PARENT=/(?:\b(my|your|his|her|their|mi|tu|su)\s+)?\b(mum|mom|mummy|mam[aá]|dad|pap[aá]|los pap[aá]s|grandma|grandpa|abuel[ao]|la abuela|el abuelo)\b/gi;
+function famName(D){return D.full.some(function(x){x=x.trim();return /^(mum|mom|mummy|mam[aá]|dad|pap[aá]|mother|father|abuel|grandma|grandpa|nan |aunt|uncle|t[ií]a |t[ií]o )/i.test(x)||FAMNAME.test(x);});}
 function guessType(D){
+  langOf(D);
+  if(noWords(D)){var nf=famName(D);return {type:nf?"family":"other",conf:nf?"medium":"low",rates:{},nolang:!nf};}
   var c={mar:0,fam:0,work:0,cli:0},n=0,k,st=[0,0],pn=[0,0],buddy=0,shared=0,owned=0;
   D.msgs.forEach(function(m){if(isMedia(m.text)||isCall(m.text)){return;}n++;var p=D.full.indexOf(m.who);
-    for(var kk in c){if(TRX[kk].test(m.text)){c[kk]++;}}
-    if(p>=0){pn[p]++;if(STRONG.test(m.text)){st[p]++;}}
-    if(BUDDY.test(m.text)){buddy++;}
-    var x;PARENT.lastIndex=0;while((x=PARENT.exec(m.text))){if(x[1]){owned++;}else{shared++;}}});
+    for(var kk in c){if(TRX[kk].test(m.text)||(XL[kk]&&XL[kk].test(m.text))){c[kk]++;}}
+    if(p>=0){pn[p]++;if(lx("strong",STRONG,m.text)){st[p]++;}}
+    if(lx("buddy",BUDDY,m.text)){buddy++;}
+    var x;PARENT.lastIndex=0;while((x=PARENT.exec(m.text))){if(x[1]){owned++;}else{shared++;}}
+    if(XL.parent){XL.parent.lastIndex=0;while((x=XL.parent.exec(m.text))){if(x[1]){owned++;}else{shared++;}}}});
   var r={};for(k in c){r[k]=1000*c[k]/Math.max(1,n);}
   var s0=1000*st[0]/Math.max(1,pn[0]),s1=1000*st[1]/Math.max(1,pn[1]),strong=1000*(st[0]+st[1])/Math.max(1,n),bud=1000*buddy/Math.max(1,n),par=1000*shared/Math.max(1,n);
   r.strong=strong;r.buddy=bud;r.parents=par;
-  var nameFam=D.full.some(function(x){return /^(mum|mom|mummy|mam[aá]|dad|pap[aá]|mother|father|abuel|grandma|grandpa|nan |aunt|uncle|t[ií]a |t[ií]o )/i.test(x.trim());});
+  var nameFam=famName(D);
   var mutual=s0>=1.2&&s1>=1.2&&strong>=2,type="other",conf="low";
   if(nameFam||r.fam>=3||(par>=2&&shared>owned)){type="family";conf=nameFam||r.fam>=6?"high":"medium";}
   else if(r.mar>=5||(mutual&&r.mar>=3)){type="married";conf=mutual?"high":"medium";}
@@ -939,13 +1174,15 @@ var COPY=(function(){
   var wrk={};for(k in cli){wrk[k]=cli[k];}wrk.good="In steady contact for";wrk.always="In steady contact all the way through.";wrk.act=["How well do you work together?","What could be smoother?"];wrk.end=["Where does it stand?","What changed?"];wrk.drop="When contact dropped";
   return {romantic:rom,married:rom,family:fam,friend:fri,client:cli,work:wrk,other:oth};
 })();
-function cp(D){return COPY[D&&D.type]||COPY.romantic;}
+var COPYNW={};
+function cp(D){var C=COPY[D&&D.type]||COPY.romantic;if(!noWords(D)){return C;}var k=(D&&D.type)||"romantic";if(!COPYNW[k]){var o={};for(var x in C){o[x]=C[x];}o.aff="Hearts and laughter";o.affChart="Hearts and laughter";o.affSub="Messages with hearts, smiling emoji or laughter, out of every 100. Warm words are not counted in this language.";o.affText="Hearts or laughter";COPYNW[k]=o;}return COPYNW[k];}
 var PLAN=/\b(tonight|tomorrow|saturday|sunday|friday|weekend|let'?s|shall we|wanna|want to (go|come|grab|meet)|free (on|this|next)|meet up|coffee|drinks?|pub|dinner|lunch|quedamos|juntarnos|nos vemos|vamos (a|por)|ma[ñn]ana|s[aá]bado|finde)\b[^?]*\?/i;
 var RITUAL=/\b(good ?morning|morning|buenos d[ií]as|buen d[ií]a|good ?night|night night|nighty|sleep well|sweet dreams|buenas noches|que duermas|descansa)\b/i;
 var CHORES=/\b(home|dinner|lunch|shopping|groceries|supermarket|pick(ing)? up|school|nursery|the kids|bills?|rent|the car|appointment|what time|on my way|running late|milk|bread|laundry|casa|cena|almuerzo|compras|s[uú]per|colegio|ni[ñn]os|cuentas?|arriendo|a qu[eé] hora|voy en camino|voy atrasad[oa])\b/i;
 var TENDER=/\b(love you|i love|miss you|te amo|te quiero|te extra[ñn]o|mi amor|babe|proud of you|thank you for|gracias por)\b|❤|😘|🥰|😍/i;
 function typeTile(D){
   var M=D.msgs,A=D.names[0],B=D.names[1];if(!M||!M.length){return null;}
+  langOf(D);var nw=noWords(D);
   var endT=D.mode==="ended"&&D.change!=null?D.weeks[D.change].start:new Date(M[M.length-1].t.getTime()+1),from=new Date(endT.getTime()-182*864e5),when=D.mode==="ended"?(D.type==="romantic"||D.type==="married"?" in the six months before it changed":" in the six months before contact dropped"):" over the last six months";
   var R=M.filter(function(m){return m.t>=from&&m.t<endT&&!isCall(m.text);}),biz=D.type==="client"||D.type==="work",pi=function(m){return m.who===D.full[0]?0:1;};
   if(R.length<30){return null;}
@@ -953,13 +1190,14 @@ function typeTile(D){
     var pc=Math.round(100*out/R.length);return ["Outside working hours",pc+"%",(pc<8?"Almost everything was sent in working hours":"Evenings and weekends. "+(by[0]>=by[1]?A:B)+" sent "+Math.round(100*Math.max(by[0],by[1])/Math.max(1,out))+"% of those")+when+"."];}
   if(D.type==="family"){var best=0,a=null,b=null,Y=M.filter(function(m){return m.t>=new Date(endT.getTime()-365*864e5)&&m.t<endT;});for(var i=1;i<Y.length;i++){var g=(Y[i].t-Y[i-1].t)/864e5;if(g>best){best=g;a=Y[i-1].t;b=Y[i].t;}}
     return ["Longest silence",Math.round(best)+(Math.round(best)===1?" day":" days"),best>=2&&a?"From "+fmtDate(a)+" to "+fmtDate(b)+", in the year "+(D.mode==="ended"?"before contact dropped.":"up to the last message."):"You were in touch nearly every day."];}
-  if(D.type==="romantic"){var days={},hit={},who=[0,0];R.forEach(function(m){var k=iso(m.t);days[k]=1;if(RITUAL.test(m.text)){hit[k]=1;who[pi(m)]++;}});
+  if(D.type==="romantic"){if(nw){return null;}var days={},hit={},who=[0,0];R.forEach(function(m){var k=iso(m.t);days[k]=1;if(lx("ritual",RITUAL,m.text)){hit[k]=1;who[pi(m)]++;}});
     var nd=Object.keys(days).length,nh=Object.keys(hit).length,pr=Math.round(100*nh/Math.max(1,nd)),tw=who[0]+who[1];
     return ["Good mornings and good nights",pr+"% of days",(tw?(Math.abs(who[0]-who[1])<=tw*0.2?"Both of you say them about equally":(who[0]>who[1]?A:B)+" says most of them ("+Math.round(100*Math.max(who[0],who[1])/tw)+"%)"):"Hardly ever written")+when+"."];}
-  if(D.type==="married"){var lg=0,td=0,n=0;R.forEach(function(m){if(isMedia(m.text)){return;}n++;if(CHORES.test(m.text)){lg++;}if(TENDER.test(m.text)){td++;}});
+  if(D.type==="married"){if(nw){return null;}var lg=0,td=0,n=0;R.forEach(function(m){if(isMedia(m.text)){return;}n++;if(lx("chores",CHORES,m.text)){lg++;}if(lx("tender",TENDER,m.text)){td++;}});
     var pl2=Math.round(100*lg/Math.max(1,n)),pt=Math.round(100*td/Math.max(1,n));
     return ["Logistics or affection",pl2+"% logistics","Plans, errands and timings. "+pt+"% of messages carry affection or thanks"+when+"."];}
-  var pl=[0,0];R.forEach(function(m){if(PLAN.test(m.text)){pl[pi(m)]++;}});var tot=pl[0]+pl[1];
+  if(nw){return null;}
+  var pl=[0,0];R.forEach(function(m){if(lx("plan",PLAN,m.text)){pl[pi(m)]++;}});var tot=pl[0]+pl[1];
   return ["Plans suggested",tot?r1(tot/6)+" a month":"Hardly any",(tot?(Math.abs(pl[0]-pl[1])<=tot*0.2?"You both suggest meeting about equally":(pl[0]>pl[1]?A:B)+" suggests most of them ("+Math.round(100*Math.max(pl[0],pl[1])/tot)+"%)"):"Few messages suggest meeting up. It may be arranged elsewhere")+when+"."];
 }
 function stageOf(D){if(D.mode==="ended"){return "ended";}if(D.silent){return "silent";}var sc=D.health&&D.health.score;return sc!=null&&sc<60?"struggling":"good";}
@@ -1004,28 +1242,28 @@ function renderActive(D){
 }
 /* ---------- "someone else": named signals, counted plainly ---------- */
 function someoneElse(D){
-  var M=D.msgs,c=D.change,cutT=c!=null?D.weeks[Math.max(0,c-8)].start:M[Math.floor(M.length*0.8)].t,sig=[];
-  function scan(rx){var late=[],base=0;M.forEach(function(m){if(isMedia(m.text)||isCall(m.text)||m.text.length>600){return;}if(rx.test(m.text)){if(m.t>=cutT){late.push(m);}else{base++;}}});return {late:late,base:base};}
+  langOf(D);var M=D.msgs,c=D.change,cutT=c!=null?D.weeks[Math.max(0,c-8)].start:M[Math.floor(M.length*0.8)].t,sig=[];
+  function scan(rx,cat){var late=[],base=0;M.forEach(function(m){if(isMedia(m.text)||isCall(m.text)||m.text.length>600){return;}if(rx.test(m.text)||(cat&&XL[cat]&&XL[cat].test(m.text))){if(m.t>=cutT){late.push(m);}else{base++;}}});return {late:late,base:base};}
   function ev(a){return a.slice(0,2).map(function(m){return {date:iso(m.t),quote:m.text.replace(/\s+/g," ").slice(0,150)};});}
-  var a=scan(/\b(cheat(ed|ing)?|someone else|somebody else|another (guy|girl|man|woman)|other (guy|girl|man|woman)|seeing (someone|somebody|anyone)|met someone|slept with|my ex|your ex|infiel|otra persona|otro (hombre|tipo)|otra (mujer|mina)|me engañaste|conocí a alguien)\b/i);
+  var a=scan(/\b(cheat(ed|ing)?|someone else|somebody else|another (guy|girl|man|woman)|other (guy|girl|man|woman)|seeing (someone|somebody|anyone)|met someone|slept with|my ex|your ex|infiel|otra persona|otro (hombre|tipo)|otra (mujer|mina)|me engañaste|conocí a alguien)\b/i,"seA");
   sig.push({label:"Direct talk of someone else or an ex",found:a.late.length>0,detail:a.late.length?a.late.length+" near the end, "+a.base+" before.":"None near the end.",ev:ev(a.late),w:35});
   var b=scan(/\b(tinder|bumble|hinge|dating app|grindr|happn|badoo)\b/i);
   sig.push({label:"Dating apps mentioned",found:b.late.length>0,detail:b.late.length?b.late.length+" near the end, "+b.base+" before.":"None near the end.",ev:ev(b.late),w:25});
-  var j=scan(/\b(jealous\w*|don'?t trust|do not trust|trust you|lying|lied|liar|hiding|who (is|was) (he|she|that)|who were you with|who are you with|celos\w*|mentir\w*|mentiste|no conf[ií]o|con qui[eé]n estabas)\b/i),nL=0,nB=0;
+  var j=scan(/\b(jealous\w*|don'?t trust|do not trust|trust you|lying|lied|liar|hiding|who (is|was) (he|she|that)|who were you with|who are you with|celos\w*|mentir\w*|mentiste|no conf[ií]o|con qui[eé]n estabas)\b/i,"seJ"),nL=0,nB=0;
   M.forEach(function(m){if(m.t>=cutT){nL++;}else{nB++;}});
   var jl=nB&&j.base?(j.late.length/Math.max(1,nL))/(j.base/nB):(j.late.length?9:0);
   sig.push({label:"Jealousy, trust or lying comes up",found:j.late.length>=2&&jl>=1.5,detail:j.late.length?j.late.length+" near the end, "+j.base+" before.":"None near the end.",ev:ev(j.late),w:15});
   var stop={},own=(D.full.join(" ")+" "+D.names.join(" ")).toLowerCase();
   "The This That What When Where Why How Yes Yeah Not And But For You Your Are Was Have Just Okay Sorry Thanks Thank Good Morning Night Hello Hey Haha Hahaha Lol Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December Missed WhatsApp London Hola Gracias Pero Que Como Bueno Vale".split(" ").forEach(function(x){stop[x]=1;});
   var nm={};M.forEach(function(m){if(isMedia(m.text)||isCall(m.text)){return;}var re=/[a-zà-ÿ,]\s+([A-Z][a-zà-ÿ]{2,})\b/g,x;while((x=re.exec(m.text))){var w=x[1];if(stop[w]||own.indexOf(w.toLowerCase())>=0){continue;}var o=nm[w]||(nm[w]={l:0,b:0});if(m.t>=cutT){o.l++;}else{o.b++;}}});
-  var names=Object.keys(nm).filter(function(w){var o=nm[w];return o.l>=5&&o.b<=Math.max(1,o.l/5);}).sort(function(x,y){return nm[y].l-nm[x].l;}).slice(0,2);
-  sig.push({label:"A new name appears often near the end",found:names.length>0,detail:names.length?names.map(function(w){return "“"+w+"” "+nm[w].l+" times near the end, "+nm[w].b+" before";}).join("; ")+". It could just as well be a colleague, a friend or a place.":"No name stands out.",ev:[],w:15});
+  var names=XL.de?[]:Object.keys(nm).filter(function(w){var o=nm[w];return o.l>=5&&o.b<=Math.max(1,o.l/5);}).sort(function(x,y){return nm[y].l-nm[x].l;}).slice(0,2);
+  sig.push({label:"A new name appears often near the end",found:names.length>0,detail:names.length?names.map(function(w){return "“"+w+"” "+nm[w].l+" times near the end, "+nm[w].b+" before";}).join("; ")+". It could just as well be a colleague, a friend or a place.":(XL.de?"Not checked. German capitalises every noun, so this test does not work.":"No name stands out."),ev:[],w:15});
   var ev2=null;
   if(c!=null&&c>=20){[0,1].forEach(function(p){var full=D.full[p],cnt={rl:0,rt:0,bl:0,bt:0},r0=D.weeks[c-8].start,r1x=D.weeks[c].start,b0=D.weeks[4].start;
     M.forEach(function(m){if(m.who!==full||m.t<b0||m.t>=r1x){return;}var hh=m.t.getHours(),d=m.t.getDay(),eve=hh>=20||hh<2||d===6||d===0;if(m.t>=r0){cnt.rt++;if(eve){cnt.rl++;}}else{cnt.bt++;if(eve){cnt.bl++;}}});
     if(cnt.rt>=40&&cnt.bt>=100){var rs=cnt.rl/cnt.rt,bs=cnt.bl/cnt.bt;if(bs>0.15&&rs<0.65*bs&&(!ev2||rs/bs<ev2.r)){ev2={p:p,r:rs/bs,rs:rs,bs:bs};}}});}
   sig.push({label:"Suddenly less available on evenings and weekends",found:!!ev2,detail:ev2?D.names[ev2.p]+" sent "+Math.round(ev2.rs*100)+"% of messages on evenings and weekends in the two months before, against a usual "+Math.round(ev2.bs*100)+"%.":"No shift in when either of you wrote.",ev:[],w:10});
-  var k=scan(/\b(cancel\w*|can'?t make it|cannot make it|rain ?check|reschedul\w*|another day|not tonight|maybe next week|no puedo (hoy|ir)|otro d[ií]a|lo dejamos)\b/i),kl=nB&&k.base?(k.late.length/Math.max(1,nL))/(k.base/nB):(k.late.length?9:0);
+  var k=scan(/\b(cancel\w*|can'?t make it|cannot make it|rain ?check|reschedul\w*|another day|not tonight|maybe next week|no puedo (hoy|ir)|otro d[ií]a|lo dejamos)\b/i,"seK"),kl=nB&&k.base?(k.late.length/Math.max(1,nL))/(k.base/nB):(k.late.length?9:0);
   sig.push({label:"Plans cancelled or pushed back more than usual",found:k.late.length>=3&&kl>=1.8,detail:k.late.length?k.late.length+" near the end, "+k.base+" before.":"None near the end.",ev:ev(k.late),w:10});
   var found=sig.filter(function(x){return x.found;}),score=Math.min(100,found.reduce(function(x,y){return x+y.w;},0));
   return {reason:"Someone else",strength:score,confidence:"signals",signals:sig,evidence:[],
@@ -1171,7 +1409,7 @@ function renderMore(D){
   add("How much each of you wrote","Average number of words in a message.",two(function(w,p){return w.txt&&w.txt[p]>=5?w.words[p]/w.txt[p]:null;}),{smooth:1},both(function(ws,p){return S(ws,function(w){return w.words[p];})/S(ws,function(w){return w.txt[p];});}," words"));
   add("Photos, videos and voice notes","How many each of you sent in a week.",two(function(w,p){return w.media?w.media[p]:null;}),{smooth:1},both(function(ws,p){return S(ws,function(w){return w.media[p];})/ws.length;}," a week"));
   add("Calls","Voice and video calls logged in the chat each week, answered or missed.",[{get:function(w){return w.calls;},color:N,soft:1}],{smooth:1},one(function(ws){return S(ws,function(w){return w.calls;})/ws.length;}," a week"));
-  add("Talking alike","How closely your small everyday words matched, from 0 to 100. In research, couples who match more tend to last longer. For one couple it is only a hint.",[{get:function(w,i){return lsmAt(D,i);},color:N,soft:1}],{max:100},one(function(ws){var a=[];ws.forEach(function(w){var v=lsmAt(D,W.indexOf(w));if(v!=null){a.push(v);}});return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;}));
+  noWords(D)||add("Talking alike","How closely your small everyday words matched, from 0 to 100. In research, couples who match more tend to last longer. For one couple it is only a hint.",[{get:function(w,i){return lsmAt(D,i);},color:N,soft:1}],{max:100},one(function(ws){var a=[];ws.forEach(function(w){var v=lsmAt(D,W.indexOf(w));if(v!=null){a.push(v);}});return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;}));
   add("Days in touch","Days each week with at least one message.",[{get:function(w){return w.active;},color:N,soft:1}],{max:7},one(function(ws){return S(ws,function(w){return w.active;})/ws.length;}," days a week"));
   if(D.msgs&&D.msgs.length){
     var hrs=[new Array(24).fill(0),new Array(24).fill(0)],tot=[0,0];
@@ -1277,7 +1515,7 @@ function deepPick(D){
   var cut=M.length;
   if(D.change!=null){var cw=D.weeks[D.change].start;for(i=0;i<M.length;i++){if(M[i].t>=cw){cut=i;break;}}take(cut-500,cut+250);}
   take(M.length-(D.change!=null?120:320),M.length);take(0,40);
-  var byDay={};M.forEach(function(m,k){if(TENSE.test(m.text)){var d=iso(m.t);(byDay[d]=byDay[d]||[]).push(k);}});
+  langOf(D);var byDay={};M.forEach(function(m,k){if(TENSE.test(m.text)||(XL.tense&&XL.tense.test(m.text))){var d=iso(m.t);(byDay[d]=byDay[d]||[]).push(k);}});
   Object.keys(byDay).sort(function(a,b){return byDay[b].length-byDay[a].length;}).slice(0,15).forEach(function(d){var ks=byDay[d];take(ks[0]-10,ks[ks.length-1]+12);});
   var longs=[];M.forEach(function(m,k){if(m.text.length>220&&!isMedia(m.text)){longs.push(k);}});
   longs.sort(function(a,b){return M[b].text.length-M[a].text.length;}).slice(0,80).forEach(function(k){take(k-2,k+3);});
@@ -1292,6 +1530,7 @@ function deepFacts(D){
   f.push("People: "+A+(D.me===0?" (the reader)":"")+" and "+B+".");
   f.push("Chat runs from "+fmtDate(W[0].start)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+", "+D.msgs.length+" messages: "+A+" "+D.count[0]+", "+B+" "+D.count[1]+".");
   f.push("Kind of relationship (best guess, or chosen by the reader): "+(TYPE_LABEL[D.type]||"unknown")+".");
+  if(D.lang&&D.lang.name&&D.lang.main!=="en"){f.push("Language of the chat: "+D.lang.name+". Write the account in English. Quote messages in their original language and add a short English translation in brackets."+(D.lang.ok?"":" The keyword counts do not work in this language, so rely on the messages themselves for anything about words."));}
   f.push(D.mode==="active"?"State: still in regular contact"+(D.silent?", but silent for "+D.silent.days+" days when exported (last message "+fmtDate(D.silent.since)+").":"."):"State: contact "+(D.gradual?"faded gradually from around":"dropped sharply in")+" the week of "+fmtDate(W[D.change].start)+" and stayed low.");
   if(D.slow){f.push(D.names[D.slow.p]+"'s typical reply went from "+fmtMin(D.slow.b)+" to "+fmtMin(D.slow.a)+" after the change.");}
   D.signals.forEach(function(s){f.push("Signal: "+s.label+", usual range "+s.range+", "+(s.first==null?"stayed in range":"first outside it in the week of "+fmtDate(W[s.first].start)+" ("+s.value+")")+".");});
@@ -1403,20 +1642,99 @@ async function writeReport(){
 
 /* ---------- loading a file ---------- */
 function setStatus(t,err){var s=$("status");s.textContent=t;s.className=err?"err":"";}
-var lastZipDate=null;
-async function readFile(f){
-  lastZipDate=null;
-  var isZip=/\.zip$/i.test(f.name||"")||/zip/i.test(f.type||"");
-  if(!isZip){try{var hd=new Uint8Array(await f.slice(0,2).arrayBuffer());isZip=hd[0]===0x50&&hd[1]===0x4B;}catch(e){}}
-  if(isZip){
-    if(!window.JSZip){throw new Error("The zip reader did not load. Unzip the export and drop the _chat.txt file instead.");}
-    var zip=await window.JSZip.loadAsync(f),entry=null;
-    zip.forEach(function(path,e){if(!e.dir&&/\.txt$/i.test(path)&&(!entry||/_chat\.txt$/i.test(path))){entry=e;}});
-    if(!entry){throw new Error("No .txt chat file was found inside that zip.");}
-    if(entry.date&&!isNaN(entry.date)){lastZipDate=entry.date.getTime();}
-    return entry.async("string");
+/* ---------- other apps: Telegram (result.json) and Instagram (message_1.json) ---------- */
+function fixMoji(s){if(typeof s!=="string"){return "";}if(!/[\u0080-ÿ]/.test(s)){return s;}try{return decodeURIComponent(escape(s));}catch(e){return s;}}
+function tgText(t){if(typeof t==="string"){return t;}if(Array.isArray(t)){return t.map(function(x){return typeof x==="string"?x:(x&&x.text)||"";}).join("");}return "";}
+function tgChat(c){
+  if(!c||!Array.isArray(c.messages)){return null;}
+  if(c.type&&c.type!=="personal_chat"){return {skip:String(c.type)};}
+  var msgs=[];
+  c.messages.forEach(function(m){
+    if(!m){return;}
+    var t=m.date_unixtime?new Date(+m.date_unixtime*1000):new Date(m.date);if(isNaN(t)){return;}
+    if(m.type==="service"){if(m.action==="phone_call"&&(m.actor||m.from)){msgs.push({t:t,who:String(m.actor||m.from),text:m.discard_reason==="missed"?"Missed voice call":"Voice call"});}return;}
+    if(m.type&&m.type!=="message"){return;}
+    var tx=tgText(m.text);
+    if(!tx&&(m.photo||m.file||m.media_type||m.sticker_emoji||m.location_information||m.contact_information||m.poll)){tx="<attached: "+(m.media_type||"media")+">";}
+    if(!tx){return;}
+    msgs.push({t:t,who:String(m.from||"Deleted account"),text:tx});
+  });
+  msgs.sort(function(a,b){return a.t-b.t;});
+  return {msgs:msgs,title:c.name?String(c.name):null,src:"Telegram"};
+}
+function igThread(parts){
+  var msgs=[],title=null,np=0;
+  parts.forEach(function(j){
+    if(!j||!Array.isArray(j.messages)){return;}
+    title=title||fixMoji(j.title||"");np=Math.max(np,(j.participants||[]).length);
+    j.messages.forEach(function(m){
+      if(!m||!m.sender_name||!m.timestamp_ms){return;}
+      var t=new Date(+m.timestamp_ms);if(isNaN(t)){return;}
+      var tx=fixMoji(m.content||""),media=m.photos||m.videos||m.audio_files||m.gifs||m.sticker||m.share||m.files;
+      if(m.call_duration!=null){tx=m.call_duration>0?"Video call":"Missed video call";}
+      else if(media&&(!tx||/ sent an attachment\.?$| shared a (story|post|reel)|sent a (photo|video|voice message)/i.test(tx))){tx="<attached: media>";}
+      if(!tx||/^(Liked a message|Reacted .{1,12} to your message)\s*$/i.test(tx)){return;}
+      msgs.push({t:t,who:fixMoji(m.sender_name),text:tx});
+    });
+  });
+  msgs.sort(function(a,b){return a.t-b.t;});
+  return {msgs:msgs,title:title,src:"Instagram",np:np};
+}
+function fromJson(j){
+  if(j&&j.chats&&Array.isArray(j.chats.list)){
+    var pi=j.personal_information||{},own=((pi.first_name||"")+" "+(pi.last_name||"")).trim()||null;
+    return j.chats.list.map(tgChat).filter(function(x){return x&&x.msgs;}).map(function(x){x.owner=own;x.many=true;return x;});
   }
-  return f.text();
+  if(j&&Array.isArray(j.messages)&&(j.participants||(j.messages[0]&&j.messages[0].sender_name!=null))){
+    var th=igThread([j]);if(th.np>2){throw new Error("This Instagram conversation is a group. WhatHappened compares two people, so choose a chat between just the two of you.");}return [th];
+  }
+  if(j&&Array.isArray(j.messages)){
+    var c=tgChat(j);if(c&&c.skip){throw new Error("This Telegram export is a "+c.skip.replace(/_/g," ")+". WhatHappened compares two people, so export a chat between just the two of you.");}
+    return c?[c]:[];
+  }
+  throw new Error("This JSON file is not a chat export this page knows. It reads WhatsApp (.txt or .zip), Telegram (result.json) and Instagram (message_1.json or the zip).");
+}
+async function readAny(f){
+  var name=f.name||"",when=f.lastModified||null;
+  var isZip=/\.zip$/i.test(name)||/zip/i.test(f.type||"");
+  if(!isZip){try{var hd=new Uint8Array(await f.slice(0,2).arrayBuffer());isZip=hd[0]===0x50&&hd[1]===0x4B;}catch(e){}}
+  function stamp(x,d){x.exportAt=d||when;x.fname=name;return x;}
+  if(isZip){
+    if(!window.JSZip){throw new Error("The zip reader did not load. Unzip the export and drop the chat file instead.");}
+    var zip;
+    try{zip=await window.JSZip.loadAsync(f);}
+    catch(e){throw new Error(f.size>3e8?"That zip is too large to open here, which usually means it includes photos and videos. Export again without media, or unzip it and add the chat file itself.":"That zip could not be opened.");}
+    var txt=null,js=[];
+    zip.forEach(function(path,e){if(e.dir){return;}if(/\.txt$/i.test(path)){if(!txt||/_chat\.txt$/i.test(path)){txt=e;}}else if(/(^|\/)(result|message_\d+)\.json$/i.test(path)){js.push(e);}});
+    function dateOf(e){return e&&e.date&&!isNaN(e.date)?e.date.getTime():null;}
+    if(!js.length){
+      if(!txt){throw new Error("No chat was found inside that zip. It should hold a WhatsApp .txt file, a Telegram result.json, or Instagram message files.");}
+      return [stamp({msgs:parseChat(await txt.async("string")),src:"WhatsApp"},dateOf(txt))];
+    }
+    var items=[],groups={},i;
+    for(i=0;i<js.length;i++){
+      if(/result\.json$/i.test(js[i].name)){var d0=dateOf(js[i]);try{fromJson(JSON.parse(await js[i].async("string"))).forEach(function(x){items.push(stamp(x,d0));});}catch(e){if(js.length===1){throw e;}}}
+      else{var dir=js[i].name.replace(/[^\/]*$/,"");(groups[dir]=groups[dir]||[]).push(js[i]);}
+    }
+    var dirs=Object.keys(groups);
+    for(i=0;i<dirs.length;i++){
+      var parts=[],g=groups[dirs[i]],k;
+      for(k=0;k<g.length;k++){try{parts.push(JSON.parse(await g[k].async("string")));}catch(e){}}
+      var th=igThread(parts);th.many=dirs.length>1;
+      if(th.np<=2&&th.msgs.length){items.push(stamp(th,dateOf(g[0])));}
+    }
+    if(!items.length){throw new Error("No conversation between two people was found in that export.");}
+    return items;
+  }
+  var text=await f.text(),head=text.slice(0,400).replace(/^﻿/,"").replace(/^\s+/,"");
+  if(head.charAt(0)==="{"){
+    var j;try{j=JSON.parse(text);}catch(e){throw new Error("That JSON file could not be read. It may be incomplete.");}
+    return fromJson(j).map(function(x){return stamp(x);});
+  }
+  if(head.charAt(0)==="<"&&/<html|<!doctype/i.test(head)){
+    throw new Error(/Exported Data|telegram/i.test(text.slice(0,4000))?"This is Telegram's HTML export. Export the chat again from Telegram Desktop with the format set to Machine-readable JSON, then add the result.json file.":"This is a web page, not a chat export. For Instagram, request your messages in JSON format. For Telegram, choose Machine-readable JSON.");
+  }
+  return [stamp({msgs:parseChat(text),src:"WhatsApp"})];
 }
 var lastMsgs=null;
 function guessMe(msgs,fname){
@@ -1456,7 +1774,7 @@ function show(msgs,me){
   if(D.mode==="active"){
     renderMeasures(D.ms);$("reasonHint").hidden=true;$("reasons").hidden=false;
   }else if(rom){
-    D.themes=wordThemes(D).filter(function(t){return t.reason!=="Someone else";});D.se=someoneElse(D);$("reasons").hidden=true;D.ms=measures(D,D.weeks.slice(Math.max(0,D.change-26),D.change));
+    if(noWords(D)){D.themes=[];D.se=null;}else{D.themes=wordThemes(D).filter(function(t){return t.reason!=="Someone else";});D.se=someoneElse(D);}$("reasons").hidden=true;D.ms=measures(D,D.weeks.slice(Math.max(0,D.change-26),D.change));
   }else{
     var c=D.change,ms=measures(D,D.weeks.slice(Math.max(0,c-26),c));
     if(D.type==="client"||D.type==="work"){var chE=chasing(D,D.weeks[Math.max(0,c-26)].start);if(chE){ms.push(chE);}}
@@ -1466,6 +1784,11 @@ function show(msgs,me){
   setStatus("");
   $("doneNames").textContent=D.names[0]+" and "+D.names[1];
   $("doneMeta").textContent=D.msgs.length.toLocaleString()+" messages, "+fmtDate(D.msgs[0].t)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+". Read on this device only.";
+  var LG=D.lang||{ok:true},ln=$("langNote"),srcA=active>=0&&chats[active]?chats[active].src:null;
+  if(srcA&&srcA!=="WhatsApp"){$("doneMeta").textContent+=" From "+srcA+".";}
+  if(LG.ok&&LG.name&&LG.main!=="en"){$("doneMeta").textContent+=" Read in "+LG.name+".";}
+  ln.hidden=LG.ok!==false;
+  if(LG.ok===false){ln.textContent="This chat is mostly in "+LG.name+". Everything counted from timings works in any language. The parts that read words (the kind of relationship, warm words, plans, reasons) know English, Spanish, Portuguese, French, German and Italian, so here they are left out instead of guessed."+(D.guess.nolang&&!chosenType&&!aiType?" Choose the kind of relationship below.":"");}
   $("whoAsk").textContent=me?"You are":"Which one are you?";
   $("me0").textContent=D.names[0];$("me1").textContent=D.names[1];
   $("me0").setAttribute("aria-pressed",me?"true":"false");$("me1").setAttribute("aria-pressed","false");
@@ -1473,8 +1796,9 @@ function show(msgs,me){
   $("typeNow").textContent=(D.type==="other"?"something else":TYPE_LABEL[D.type].toLowerCase()+(D.type==="romantic"?" relationship":D.type==="married"?" couple":D.type==="work"?"s":""));
   var tr=$("typeRow");tr.replaceChildren();tr.hidden=true;$("typeFix").setAttribute("aria-expanded","false");
   Object.keys(TYPE_LABEL).forEach(function(k){var b=h("button",null,TYPE_LABEL[k]);b.type="button";b.setAttribute("aria-pressed",k===D.type?"true":"false");b.addEventListener("click",function(){chosenType=k;try{show(lastMsgs,lastMe);}catch(e){}});tr.appendChild(b);});
+  if(D.guess.nolang&&!chosenType&&!aiType){$("typeAsk").textContent="Kind of relationship";$("typeNow").textContent="not read";tr.hidden=false;$("typeFix").setAttribute("aria-expanded","true");}
   if(REPORT_ENDPOINT){$("doneMeta").textContent+=" A short sample goes to the AI to recognise the kind of relationship.";}
-  if(D.msgs.length>=39900&&D.msgs.length<=40100){$("doneMeta").textContent+=" WhatsApp stops an export at 40,000 messages, so the start of this chat may be missing.";}
+  if((!srcA||srcA==="WhatsApp")&&D.msgs.length>=39900&&D.msgs.length<=40100){$("doneMeta").textContent+=" WhatsApp stops an export at 40,000 messages, so the start of this chat may be missing.";}
   if(active>=0&&chats[active]){var cA=chats[active];cA.me=me;cA.chosenType=chosenType;cA.aiType=aiType;try{cA.summary=summarise(D);}catch(e){}saveMap();}
   renderMap();
   $("intake").hidden=true;$("done").hidden=false;
@@ -1548,24 +1872,42 @@ function openChat(i){
   active=i;lastMsgs=c.msgs;lastExport=c.exportAt;chosenType=c.chosenType||null;aiType=c.aiType||null;
   show(c.msgs,c.me);
 }
-async function readOne(f,pasted){
-  var text=pasted!=null?pasted:await readFile(f),msgs=parseChat(text);
-  if(msgs.length<(pasted!=null?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted!=null?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is text from a WhatsApp chat.");}
-  var people=peopleOf(msgs);
-  return {key:people.slice().sort().join("|"),people:people,msgs:msgs,fname:f?f.name:null,exportAt:pasted!=null?Date.now():(lastZipDate||(f&&f.lastModified)||null),me:guessMe(msgs,f?f.name:null),chosenType:null,aiType:null,summary:null};
+function mergeMsgs(a,b){var seen={},out=[];a.concat(b).forEach(function(m){var k=m.t.getTime()+"|"+m.who+"|"+m.text;if(!seen[k]){seen[k]=1;out.push(m);}});out.sort(function(x,y){return x.t-y.t;});return out;}
+function toChat(it,pasted){
+  var msgs=it.msgs,app=it.src||"WhatsApp";
+  if(msgs.length<(pasted?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is a chat exported from WhatsApp, Telegram or Instagram.");}
+  var people=peopleOf(msgs),me=null;
+  if(app==="WhatsApp"){me=guessMe(msgs,it.fname);}
+  else if(it.owner&&people.indexOf(it.owner)>=0){me=it.owner;}
+  else if(it.title&&people.length===2&&(people[0]===it.title)!==(people[1]===it.title)){me=people[0]===it.title?people[1]:people[0];}
+  return {key:people.slice().sort().join("|"),people:people,msgs:msgs,fname:it.fname||null,exportAt:pasted?Date.now():(it.exportAt||null),me:me,chosenType:null,aiType:null,summary:null,src:app,many:!!it.many};
 }
 async function loadMany(files,pasted,keep){
-  var added=[],errors=[],list=pasted!=null?[null]:files;
-  for(var i=0;i<list.length;i++){
+  var added=[],errors=[],list=pasted!=null?[null]:files,pend=[],i;
+  for(i=0;i<list.length;i++){
     setStatus(pasted!=null?"Reading the pasted text ...":"Reading "+list[i].name+(list.length>1?" ("+(i+1)+" of "+list.length+")":"")+" ...");
-    try{var c=await readOne(list[i],pasted);analyse(c.msgs,c.me);var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}}
-    catch(e){errors.push((list[i]&&list[i].name?list[i].name+": ":"")+(e&&e.message?e.message:"could not be read."));}
+    try{
+      var items=pasted!=null?[{msgs:parseChat(pasted),src:"WhatsApp"}]:await readAny(list[i]),got=0,firstErr=null;
+      if(items.length>1){items=items.filter(function(x){return x.msgs.length>=200;}).sort(function(a,b){return b.msgs.length-a.msgs.length;}).slice(0,40);items.forEach(function(x){x.many=true;});}
+      items.forEach(function(it){try{pend.push(toChat(it,pasted!=null));got++;}catch(e){firstErr=firstErr||e;}});
+      if(!got){throw firstErr||new Error("No conversation between two people with at least 200 messages was found in that export.");}
+    }catch(e){errors.push((list[i]&&list[i].name?list[i].name+": ":"")+(e&&e.message?e.message:"could not be read."));}
   }
-  if(!added.length){setStatus(errors[0]||"That file could not be read.",true);return;}
+  var byKey={},uniq=[],skipped=null;
+  pend.forEach(function(c){var o=byKey[c.key];
+    if(o&&o.src===c.src&&c.src!=="WhatsApp"){o.msgs=mergeMsgs(o.msgs,c.msgs);}
+    else if(o){uniq[uniq.indexOf(o)]=c;byKey[c.key]=c;}
+    else{byKey[c.key]=c;uniq.push(c);}});
+  uniq.forEach(function(c){
+    try{analyse(c.msgs,c.me);}catch(e){if(c.many){skipped=skipped||e;}else{errors.push((c.fname?c.fname+": ":"")+(e&&e.message?e.message:"could not be read."));}return;}
+    var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}
+  });
+  if(!added.length){setStatus(errors[0]||(skipped&&skipped.message)||"That file could not be read.",true);return;}
   var me=commonMe();
   chats.forEach(function(c,k){if(me){c.me=me;}try{c.summary=summarise(prepare(analyse(c.msgs,c.me),c));}catch(e){}});
   if(keep&&active>=0){saveMap();try{openChat(active);}catch(e){}}
-  else{try{openChat(added[0]);classifyAI(current);}catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);return;}}
+  else{try{openChat(added[0]);classifyAI(current);}catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);return;}
+    if(added.length>1){setStatus(added.length+" conversations found. Showing the longest. The others are under All your relationships, at the end.");}}
   if(errors.length){setStatus(added.length+" added. "+errors.length+" could not be read: "+errors[0],true);$("mapNote").textContent=added.length+" added. "+errors.length+" could not be read: "+errors[0];}
   if(keep){$("mapSec").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(window.innerWidth<=820){$("drop").scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
