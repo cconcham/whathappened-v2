@@ -375,7 +375,7 @@ body.is-phone .pastewrap{display:flex}
 <section class="hero">
   <div class="copy">
     <h1>What happened?</h1>
-    <p class="lede">Add a WhatsApp chat with anyone: a partner, a friend, family, a colleague. See how it is doing, what changed, and why.</p>
+    <p class="lede">Add a WhatsApp chat with anyone: a partner, a friend, family, a client, a colleague. See how it is doing, what changed, and why.</p>
     <div class="drop" id="drop">
       <div id="intake" class="pane">
       <div class="tabs" role="tablist" aria-label="Ways to add your chat">
@@ -732,14 +732,14 @@ function localStory(D,themes,soft){
     var med=[0,1].map(function(p){var a=[];pre.forEach(function(w){a.push.apply(a,w.rep[p]);});return median(a);});
     var sent=[0,1].map(function(p){return pre.reduce(function(s,w){return s+w.n[p];},0);}),share=Math.round(100*sent[0]/Math.max(1,sent[0]+sent[1]));
     var s1="For about "+span(c)+", "+A+" and "+B+" wrote "+(act>=5.5?"almost every day":act>=4?"most days":"regularly")+", around "+Math.round(avg(pre,function(w){return w.tot;}))+" messages a week.";
-    if(med[0]!=null&&med[1]!=null){s1+=" "+A+" typically answered in about "+Math.round(med[0])+" minutes and "+B+" in about "+Math.round(med[1])+".";}
+    if(med[0]!=null&&med[1]!=null){s1+=" "+A+" typically answered in "+fmtMin(med[0])+" and "+B+" in "+fmtMin(med[1])+".";}
     s1+=share>=42&&share<=58?" The writing was balanced between you.":" "+(share>58?A:B)+" did more of the writing ("+(share>58?share:100-share)+"% of the messages).";
     ps.push(s1);
     var s2=(D.gradual?"That changed gradually, from around the week of ":"That changed in the week of ")+fmtDate(W[c].start)+". Messages fell from about "+mB+" a week to about "+mA+" and did not come back.";
-    if(D.slow){var o=1-D.slow.p;s2+=" "+D.names[D.slow.p]+"'s typical reply went from "+Math.round(D.slow.b)+" to "+Math.round(D.slow.a)+" minutes"+(med[o]!=null?", while "+D.names[o]+" kept answering about as quickly as before.":".");}
+    if(D.slow){var o=1-D.slow.p;s2+=" "+D.names[D.slow.p]+"'s typical reply went from "+fmtMin(D.slow.b)+" to "+fmtMin(D.slow.a)+(med[o]!=null?", while "+D.names[o]+" kept answering about as quickly as before.":".");}
     ps.push(s2);
     var early=D.signals.filter(function(x){return x.lead>0;}).sort(function(a,b){return b.lead-a.lead;});
-    if(early.length){ps.push("It did not come from nowhere. "+early[0].lead+(early[0].lead===1?" week":" weeks")+" earlier, "+early[0].label.charAt(0).toLowerCase()+early[0].label.slice(1)+" had already left its usual range.");}
+    if(early.length){ps.push("It did not come from nowhere. "+early[0].lead+(early[0].lead===1?" week":" weeks")+" earlier, "+(early[0].label.indexOf("Days")===0?"days":early[0].label.charAt(0))+early[0].label.slice(early[0].label.indexOf("Days")===0?4:1)+" had already left its usual range.");}
     else if(soft.length){ps.push("There was no clear warning. Looking back, the only hints were small: "+soft.slice(0,2).map(function(x){return x.t.charAt(0).toLowerCase()+x.t.slice(1);}).join(", and ")+".");}
     else if(!D.signals.length){ps.push("This chat is too short to say whether there were signs beforehand. A few more months of history would be needed to know what normal looked like.");}
     else if(D.gradual){ps.push("There was no single moment. The conversation thinned out over weeks, which usually means attention moved elsewhere bit by bit, not one decision.");}
@@ -752,24 +752,26 @@ function localStory(D,themes,soft){
 }
 
 /* ---------- v2: what kind of relationship, and what state it is in ---------- */
-var TYPE_LABEL={romantic:"Romantic",married:"Married",family:"Family",friend:"Friend",work:"Work",other:"Something else"};
-var TW={romantic:{noun:"relationship",end:"breakup"},married:{noun:"marriage",end:"separation"},family:{noun:"family relationship",end:"distance"},friend:{noun:"friendship",end:"drifting apart"},work:{noun:"working relationship",end:"ending"},other:{noun:"relationship",end:"ending"}};
+var TYPE_LABEL={romantic:"Romantic",married:"Married",family:"Family",friend:"Friend",client:"Client",work:"Colleague",other:"Something else"};
+var TW={romantic:{noun:"relationship",end:"breakup"},married:{noun:"marriage",end:"separation"},family:{noun:"family relationship",end:"distance"},friend:{noun:"friendship",end:"drifting apart"},work:{noun:"working relationship",end:"ending"},client:{noun:"client relationship",end:"going quiet"},other:{noun:"relationship",end:"ending"}};
 var TRX={
  rom:/\b(love you|i love u|luv u|my love|babe|baby|bae|honey|sweetheart|darling|miss you|kiss(es)?|te amo|te quiero|mi amor|amor|cari[ñn]o|guap[ao]|hermos[ao]|bes(o|os|itos)|boyfriend|girlfriend|novi[oa]|date night|sexy|cuddle)\b|❤|😘|🥰|😍|💕|💋/i,
  mar:/\b(husband|wife|hubby|wifey|the kids|our kids|the children|school run|nursery|daycare|mortgage|in-?laws|anniversary|espos[oa]|marido|mi mujer|los ni[ñn]os|suegr[oa]s?|hipoteca|colegio)\b/i,
  fam:/(^|[,!?.]\s*|\b(hi|hey|hello|hola|thanks|thank you|gracias|ok|yes|no|love you|te quiero)\s+)(mum|mom|mummy|mam[aá]|dad|pap[aá]|bro|sis|hermano|hermana|hij[oa]|son|abuel[ao]|grandma|grandpa|nan|t[ií]a|auntie?|uncle|prim[oa])\s*([,!?.]|$)/i,
- work:/\b(meeting|client|invoice|deadline|report|manager|project|presentation|contract|proposal|budget|stakeholder|kind regards|best regards|please find|attached|the team|shift|rota|onboarding|kpi|reuni[oó]n|cliente|factura|informe|jefe|proyecto|presupuesto|saludos cordiales|adjunto)\b/i,
+ work:/\b(meeting|deadline|report|manager|my boss|the boss|project|presentation|stakeholder|the team|standup|shift|rota|kpi|the office|sprint|reuni[o\u00f3]n|informe|jefe|proyecto|la oficina|el equipo)\b/i,
+ cli:/\b(invoice|quote|quotation|proposal|contract|pricing|price list|fees?|commission|payment|paid|deposit|transfer|wire|account (opening|number|statement)|your account|onboarding|kyc|compliance|documents?|signature|sign(ed)? the|order|delivery|portfolio|statement|kind regards|best regards|dear (mr|mrs|ms|sir)|please find|attached|our services?|factura|cotizaci[o\u00f3]n|propuesta|contrato|precio|comisi[o\u00f3]n|pago|dep[o\u00f3]sito|transferencia|su cuenta|documentos?|firma|pedido|estimad[oa]|saludos cordiales|adjunto|cartera)\b/i,
  fri:/\b(mate|dude|bro|lads?|pub|beers?|pints?|party|the game|gym|weon|we[oó]n|wn|amig[oa]|cerve[zs]as?|carrete|fiesta)\b/i
 };
 function guessType(D){
-  var c={rom:0,mar:0,fam:0,work:0,fri:0},n=0,k;
+  var c={rom:0,mar:0,fam:0,work:0,cli:0,fri:0},n=0,k;
   D.msgs.forEach(function(m){if(isMedia(m.text)||isCall(m.text)){return;}n++;for(var kk in TRX){if(TRX[kk].test(m.text)){c[kk]++;}}});
   var r={};for(k in c){r[k]=1000*c[k]/Math.max(1,n);}
   var nameFam=D.full.some(function(x){return /^(mum|mom|mummy|mam[aá]|dad|pap[aá]|mother|father|abuel|grandma|grandpa|nan|aunt|uncle|t[ií]a |t[ií]o )/i.test(x.trim());});
   var type="other",conf="low";
   if(nameFam||(r.fam>=4&&r.fam>r.rom)){type="family";conf=nameFam?"high":"medium";}
   else if(r.rom>=10){type=r.mar>=3?"married":"romantic";conf=r.rom>=25?"high":"medium";}
-  else if(r.work>=20&&r.rom<4){type="work";conf=r.work>=45?"high":"medium";}
+  else if(r.cli>=18&&r.cli>=r.work&&r.rom<4){type="client";conf=r.cli>=40?"high":"medium";}
+  else if(r.work>=18&&r.rom<4){type="work";conf=r.work>=40?"high":"medium";}
   else if(r.rom>=4){type="romantic";conf="low";}
   else if(n>=100){type="friend";conf=r.fri>=5?"medium":"low";}
   return {type:type,conf:conf,rates:r};
@@ -814,7 +816,19 @@ function direction(D){
   var ratio=recent/before,pc=Math.round(Math.abs(ratio-1)*100);
   return {key:"direction",label:"Direction",score:Math.round(Math.min(100,100*ratio)),text:pc<12?"Lately you talk about as much as in the months before.":"Over the last two months you talk about "+pc+"% "+(ratio<1?"less":"more")+" than in the six months before.",v:ratio};
 }
-var HW={romantic:{},married:{},friend:{warmth:0.7},family:{time:1.4,resp:0.6},work:{warmth:0,curiosity:0.6,resp:1.6,starts:0.5},other:{warmth:0.5}};
+function chasing(D,from){
+  var M=D.msgs,st=[{n:0,un:0},{n:0,un:0}];if(!M){return null;}
+  for(var i=0;i<M.length;i++){var m=M[i];if(from&&m.t<from){continue;}var p=D.full.indexOf(m.who);if(p<0){continue;}
+    var pv=M[i-1];if(pv&&pv.who===m.who&&(m.t-pv.t)<12*3600e3){continue;}
+    var ans=false,j;for(j=i+1;j<M.length&&(M[j].t-m.t)<=48*3600e3;j++){if(M[j].who!==m.who){ans=true;break;}}
+    if(!ans&&(M[M.length-1].t-m.t)<48*3600e3){continue;}
+    st[p].n++;if(!ans){st[p].un++;}}
+  if(st[0].n<8&&st[1].n<8){return null;}
+  var rt=st.map(function(x){return x.n?100*x.un/x.n:0;}),w=rt[0]>=rt[1]?0:1;
+  return {key:"chase",label:"Follow-ups left unanswered",score:Math.round(Math.max(0,100-3*Math.max(rt[0],rt[1]))),v:rt,who:w,
+    text:D.names[0]+" was left without an answer for two days or more "+st[0].un+" times ("+Math.round(rt[0])+"%), "+D.names[1]+" "+st[1].un+" times ("+Math.round(rt[1])+"%)."};
+}
+var HW={romantic:{},married:{},friend:{warmth:0.7},family:{time:1.4,resp:0.6},work:{warmth:0,curiosity:0.6,resp:1.6,starts:0.5},client:{warmth:0.2,curiosity:0.6,resp:1.8,starts:0.6,time:0.6,direction:1.5,chase:1.6},other:{warmth:0.5}};
 function health(D,ms){
   var w=HW[D.type]||{},s=0,t=0;ms.forEach(function(m){if(m.score==null||isNaN(m.score)){return;}var k=w[m.key]==null?1:w[m.key];s+=k*m.score;t+=k;});
   var sc=t?Math.round(s/t):null;
@@ -822,12 +836,13 @@ function health(D,ms){
 }
 function improvements(D,ms){
   var A=D.names[0],B=D.names[1],out=[],good=[],by={};ms.forEach(function(m){by[m.key]=m;});
-  var b=by.balance;if(b&&b.score<55){var hv=b.v>50?A:B,lt=b.v>50?B:A;out.push({t:hv+" carries the conversation",d:b.text+" It evens out if "+lt+" writes first more often."});}
+  var b=by.balance;if(b&&b.score<55){var hv=b.v>50?A:B,lt=b.v>50?B:A;out.push({t:hv+" carries the conversation",d:b.text+(D.type==="client"?" With a client that often means one side is selling and the other is only receiving.":" It evens out if "+lt+" writes first more often.")});}
   var r=by.resp;if(r&&r.v[0]!=null&&r.v[1]!=null){var hi=Math.max(r.v[0],r.v[1]),lo=Math.max(0.5,Math.min(r.v[0],r.v[1]));if(hi/lo>=2.5&&hi>=10){var slow=r.v[0]>r.v[1]?A:B;out.push({t:slow+" takes much longer to answer",d:r.text+" A gap this size is usually felt by the person waiting."});}else if(r.score!=null&&r.score<45){out.push({t:"Replies are slow on both sides",d:r.text});}}
   var s=by.starts;if(s&&s.score<45){out.push({t:(s.v>50?A:B)+" nearly always starts",d:s.text+" When one person always reaches out first, it can start to feel one sided."});}
   var wm=by.warmth;if(wm&&D.type!=="work"&&wm.score<35){out.push({t:"Little warmth shows up in writing",d:wm.text+" It may all happen in person or on calls, which a chat cannot see."});}
   var c=by.curiosity;if(c){var qa=c.v[0],qb=c.v[1];if(Math.max(qa,qb)>=6&&Math.min(qa,qb)<Math.max(qa,qb)/2.5){out.push({t:(qa<qb?A:B)+" asks far fewer questions",d:c.text+" Asking about the other person is one of the clearer signs of interest."});}else if(c.score<30){out.push({t:"Few questions either way",d:c.text});}}
   var tm=by.time;if(tm&&tm.v<3){out.push({t:"You are not in touch often",d:tm.text});}
+  var ck=by.chase;if(ck&&Math.max(ck.v[0],ck.v[1])>=15){out.push({t:D.names[ck.who]+" is doing the chasing",d:ck.text+" In a client relationship, repeated follow-ups with no answer are usually the earliest warning."});}
   var dr=by.direction;if(dr&&dr.v<0.72){out.push({t:"You are talking less than you used to",d:dr.text+" Worth noticing while it is still small."});}
   ms.forEach(function(m){if(m.score!=null&&m.score>=75){good.push(m);}});
   return {todo:out,good:good};
@@ -863,6 +878,7 @@ function setHeads(D){
 function lowt(D,t){return t.indexOf(D.names[0])===0||t.indexOf(D.names[1])===0?t:t.charAt(0).toLowerCase()+t.slice(1);}
 function renderActive(D){
   var W=D.weeks,ws=W.slice(Math.max(0,W.length-27),Math.max(1,W.length-1)),ms=measures(D,ws),dr=direction(D);if(dr){ms.push(dr);}
+  if(D.type==="client"||D.type==="work"){var ch=chasing(D,ws[0].start);if(ch){ms.push(ch);}}
   var H=health(D,ms),imp=improvements(D,ms),L=TW[D.type]||TW.other,by={};ms.forEach(function(m){by[m.key]=m;});
   D.ms=ms;D.health=H;D.imp=imp;
   var t=$("tiles");t.replaceChildren();
@@ -982,7 +998,7 @@ function drawThreads(D){
   if(D.change!=null){
     var months=Math.max(1,Math.round(D.change/4.345)),bw=[0,1].map(function(p){var a=D.weeks.slice(Math.max(0,D.change-12),D.change),b=D.weeks.slice(D.change);var f=function(x){return x.reduce(function(s,w){return s+w.warm[p];},0)/Math.max(1,x.length);};return f(a)-f(b);});
     var who=bw[0]>bw[1]*1.4?0:bw[1]>bw[0]*1.4?1:-1;
-    say="Warm with each other for "+months+(months===1?" month":" months")+". Then "+(D.gradual?"it slowly faded":who>=0?D.names[who]+" pulled away":(D.signals||[]).some(function(x){return x.lead>0;})?"you both went quiet":"it went quiet in a single week")+".";
+    say=(D.type==="romantic"||D.type==="married"||!D.type?"Warm with each other for ":"In steady contact for ")+months+(months===1?" month":" months")+". Then "+(D.gradual?"it slowly faded":who>=0?D.names[who]+" pulled away":(D.signals||[]).some(function(x){return x.lead>0;})?"you both went quiet":"it went quiet in a single week")+".";
   }else{say="Warm with each other all the way through. The chat shows no clear break.";}
   $("say").textContent=say;
   svg.__info={W:W,l:m.l,r:m.r,n:n,top:m.t-6,bottom:H-m.b,read:function(i){var w=D.weeks[i];return "Week of "+fmtDate(w.start)+": "+D.names[0]+" "+feel(w.warm[0])+", "+D.names[1]+" "+feel(w.warm[1])+".";}};
@@ -1165,7 +1181,7 @@ function buildPrompt(D){
   "Reply with JSON only, no other text, in this shape:\n"+
   "{\"story\": string, \"reasons\": [{\"reason\": string, \"strength\": number, \"confidence\": \"low\"|\"medium\"|\"high\", \"evidence\": [{\"date\": \"YYYY-MM-DD\", \"quote\": string}], \"note\": string}]}\n"+
   (D.mode==="active"||!(D.type==="romantic"||D.type==="married")?"This is NOT a romantic breakup analysis. In story, describe how healthy the relationship looks, what could be better and why, in terms that fit this kind of relationship. Return an empty reasons list.\n":"")+
-  "Add a field \"type\" with your own reading of the kind of relationship: romantic, married, family, friend, work or other.\n"+
+  "Add a field \"type\" with your own reading of the kind of relationship: romantic, married, family, friend, client, work or other.\n"+
   "story: two or three short paragraphs separated by a blank line, in plain language, addressed as 'you' only if it is clear who the reader is, otherwise use the names. Cover what the relationship looked like in the chat, when and how it changed, whether there were signs beforehand, and what the messages suggest about why. End with one sentence on what the chat cannot show.\n"+
   "reasons: exactly these seven, in any order: \"Work and career\", \"Time and logistics\", \"Routine and boredom\", \"Communication and conflict\", \"Different futures\", \"Money\", \"Someone else\". strength is 0 to 100 for how much evidence appears in the messages, not the probability it is true. Give up to three evidence items per reason, each a real short quote from the extract with its date. Use an empty evidence list and a low strength when the chat shows little. For \"Someone else\" be especially conservative: jokes, friends and colleagues are not evidence.";
 }
@@ -1215,7 +1231,7 @@ var lastMsgs=null;
 function guessMe(msgs,fname){
   if(!fname){return null;}
   var base=fname.toLowerCase().replace(/\.(zip|txt)$/,"").replace(/^whatsapp chat (with|-)\s*/,"").replace(/^chat de whatsapp con\s*/,"").replace(/\s*\(\d+\)$/,"").trim();
-  if(!base||base==="_chat"){return null;}
+  if(!base||base.length<3||base==="_chat"){return null;}
   var count={};msgs.forEach(function(m){count[m.who]=(count[m.who]||0)+1;});
   var names=Object.keys(count).sort(function(x,y){return count[y]-count[x];}).slice(0,2);
   if(names.length<2){return null;}
@@ -1239,7 +1255,9 @@ function show(msgs,me){
     var themes=wordThemes(D).filter(function(t){return t.reason!=="Someone else";});themes.push(someoneElse(D));
     $("storyText").textContent=localStory(D,themes,D.soft||[]);renderReasons(themes,false);$("reasonHint").hidden=false;
   }else{
-    var c=D.change,ms=measures(D,D.weeks.slice(Math.max(0,c-26),c));D.ms=ms;
+    var c=D.change,ms=measures(D,D.weeks.slice(Math.max(0,c-26),c));
+    if(D.type==="client"||D.type==="work"){var chE=chasing(D,D.weeks[Math.max(0,c-26)].start);if(chE){ms.push(chE);}}
+    D.ms=ms;
     $("storyText").textContent=localStory(D,null,D.soft||[]);renderMeasures(ms);$("reasonHint").hidden=true;
   }
   setStatus("");
