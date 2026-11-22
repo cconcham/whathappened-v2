@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · WhatHappened</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14162B;--muted:#5B6078;--line:rgba(20,22,43,.10);--a:#3D6BFF;--b:#FF6FAE}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:"Manrope","Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6}
+.wrap{max-width:720px;margin:0 auto;padding:18px 20px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:36px}
+.mark{font-weight:700;font-size:20px;color:var(--ink);text-decoration:none}
+.mark i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--a);margin-right:3px}
+.mark i+i{background:var(--b);margin-right:9px}
+.lang button{font:inherit;font-size:14px;font-weight:600;background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;min-height:36px;cursor:pointer;color:var(--muted)}
+.lang button[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.1;letter-spacing:-.015em;margin:0 0 8px}
+h2{font-size:20px;margin:32px 0 8px}
+p,li{color:var(--ink)}
+p{margin:0 0 12px}
+ul{margin:0 0 12px;padding-left:20px}
+.muted{color:var(--muted);font-size:14px}
+.note{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:20px 0;background:rgba(61,107,255,.05)}
+a{color:var(--a)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:14px}
+[data-l]{display:none}
+html[lang="en"] [data-l="en"],html[lang="es"] [data-l="es"]{display:block}
+html[lang="en"] span[data-l="en"],html[lang="es"] span[data-l="es"]{display:inline}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="mark" href="./"><i></i><i></i>WhatHappened</a>
+<div class="lang"><button type="button" id="bEn">English</button> <button type="button" id="bEs">Español</button></div></header>
+
+<div data-l="en">
+<h1>Privacy</h1>
+<p class="muted">Last updated 22 November 2026. WhatHappened is in a test phase with invited users.</p>
+<div class="note"><p><b>The short version.</b> Your chat is read inside your own browser. It is not uploaded to us and we never store it. If you sign in, we keep your email and short summaries with numbers, never the messages.</p></div>
+
+<h2>Who runs this</h2>
+<p>WhatHappened is run by an individual developer based in London, United Kingdom. To reach us about anything on this page, use the "Give feedback" link at the bottom of the site and write your email in the comment so we can reply.</p>
+
+<h2>What happens to your chat</h2>
+<ul>
+<li>When you choose or paste a chat, the file is opened and analysed by code running in your browser. The file does not leave your device for this step.</li>
+<li>The charts, scores and sentences in the result are worked out on your device.</li>
+<li>When you close or reload the page, the chat is gone. We cannot get it back, because we never had it.</li>
+</ul>
+
+<h2>The deep reading (optional)</h2>
+<p>The deep reading is written by an AI model. Only if you press that button, the following is sent over an encrypted connection: the numbers from your charts and a selection of messages from the chat, with the names as they appear.</p>
+<ul>
+<li>It passes through our relay on Cloudflare and goes to Google's Gemini service on a paid plan. Under that plan Google does not use the content to train its models.</li>
+<li>Our relay does not save the messages or the reading. It only counts how many readings were made.</li>
+<li>Google may keep the request for a short time to detect abuse, under its own terms.</li>
+<li>These messages include what the other person wrote. Please only use chats you took part in.</li>
+</ul>
+
+<h2>If you sign in with Google</h2>
+<p>Signing in is optional during the test. If you do, we store:</p>
+<ul>
+<li>Your Google account identifier, email address and name, as Google gives them to us.</li>
+<li>Your plan and how many deep readings you have used.</li>
+<li>A short summary of each relationship you save: the name you see in the chat, the type, dates and scores. No messages.</li>
+</ul>
+<p>We do not receive your Google password and we do not get access to your Gmail, contacts or files.</p>
+
+<h2>Feedback</h2>
+<p>If you send feedback we store your rating, your comment, the time and a few general facts about the result you were looking at: the type of relationship, the language of the chat, the app it came from and its rough size. No names and no messages. We have your email only if you write it in the comment.</p>
+
+<h2>What stays on your device</h2>
+<p>The site saves a few things in your browser's storage so it works between visits: your language, your saved summaries, whether you have used the free reading, your sign in session and whether you already saw the feedback window. You can remove them by clearing the site data in your browser.</p>
+
+<h2>What we do not do</h2>
+<ul>
+<li>No advertising and no advertising cookies.</li>
+<li>No analytics or tracking scripts.</li>
+<li>No selling or sharing of data with anyone other than the services listed below.</li>
+<li>No tracking by IP address. Cloudflare, like any host, sees IP addresses briefly to deliver the service.</li>
+</ul>
+
+<h2>Services we use</h2>
+<ul>
+<li><b>GitHub Pages</b> serves the site files.</li>
+<li><b>Cloudflare</b> runs the relay and the small database with accounts, summaries and feedback.</li>
+<li><b>Google</b> provides sign in and the AI model for the deep reading.</li>
+<li><b>Google Fonts</b> and a code library host deliver fonts and one helper script, which means they see a request from your browser.</li>
+</ul>
+<p>Some of these companies process data outside the United Kingdom, including in the United States, under their own safeguards.</p>
+
+<h2>Why we are allowed to use this data</h2>
+<p>We use account data to provide the service you asked for. The deep reading only runs when you ask for it. Feedback is used to improve the product.</p>
+
+<h2>How long we keep it</h2>
+<ul>
+<li>Account and summaries: until you delete your account. Open the account menu and choose "Delete my account" and they are removed straight away.</li>
+<li>Feedback: up to 24 months.</li>
+<li>Chats and deep readings: not kept at all.</li>
+</ul>
+
+<h2>Your rights</h2>
+<p>You can ask for a copy of your data, ask us to correct or delete it, or object to how it is used. Write to us through the feedback link. If you are in the United Kingdom you can also complain to the Information Commissioner's Office at ico.org.uk.</p>
+
+<h2>Age</h2>
+<p>WhatHappened is for adults aged 18 or over.</p>
+
+<h2>Changes</h2>
+<p>If this page changes in a way that matters, we will say so on the site before it applies.</p>
+</div>
+
+<div data-l="es">
+<h1>Privacidad</h1>
+<p class="muted">Última actualización: 22 de noviembre de 2026. WhatHappened está en fase de prueba con usuarios invitados.</p>
+<div class="note"><p><b>En resumen.</b> Tu chat se lee dentro de tu propio navegador. No se sube a nuestros servidores y nunca lo guardamos. Si inicias sesión, guardamos tu correo y resúmenes cortos con números, nunca los mensajes.</p></div>
+
+<h2>Quién está detrás</h2>
+<p>WhatHappened lo lleva un desarrollador independiente con base en Londres, Reino Unido. Para escribirnos sobre cualquier punto de esta página, usa el enlace "Dar tu opinión" al final del sitio y escribe tu correo en el comentario para que podamos responderte.</p>
+
+<h2>Qué pasa con tu chat</h2>
+<ul>
+<li>Cuando eliges o pegas un chat, el archivo se abre y se analiza con código que corre en tu navegador. En este paso el archivo no sale de tu dispositivo.</li>
+<li>Los gráficos, puntajes y frases del resultado se calculan en tu dispositivo.</li>
+<li>Cuando cierras o recargas la página, el chat desaparece. No podemos recuperarlo, porque nunca lo tuvimos.</li>
+</ul>
+
+<h2>La lectura profunda (opcional)</h2>
+<p>La lectura profunda la escribe un modelo de IA. Solo si presionas ese botón, se envía por una conexión cifrada lo siguiente: los números de tus gráficos y una selección de mensajes del chat, con los nombres tal como aparecen.</p>
+<ul>
+<li>Pasa por nuestro intermediario en Cloudflare y llega al servicio Gemini de Google en un plan de pago. En ese plan Google no usa el contenido para entrenar sus modelos.</li>
+<li>Nuestro intermediario no guarda los mensajes ni la lectura. Solo cuenta cuántas lecturas se hicieron.</li>
+<li>Google puede conservar la solicitud por un tiempo corto para detectar abusos, según sus propias condiciones.</li>
+<li>Esos mensajes incluyen lo que escribió la otra persona. Usa solo chats en los que participaste.</li>
+</ul>
+
+<h2>Si inicias sesión con Google</h2>
+<p>Iniciar sesión es opcional durante la prueba. Si lo haces, guardamos:</p>
+<ul>
+<li>El identificador de tu cuenta de Google, tu correo y tu nombre, tal como Google nos los entrega.</li>
+<li>Tu plan y cuántas lecturas profundas has usado.</li>
+<li>Un resumen corto de cada relación que guardas: el nombre que ves en el chat, el tipo, fechas y puntajes. Sin mensajes.</li>
+</ul>
+<p>No recibimos tu contraseña de Google y no tenemos acceso a tu Gmail, contactos ni archivos.</p>
+
+<h2>Tu opinión</h2>
+<p>Si envías tu opinión guardamos tu calificación, tu comentario, la hora y algunos datos generales del resultado que estabas viendo: el tipo de relación, el idioma del chat, la app de origen y su tamaño aproximado. Sin nombres y sin mensajes. Tenemos tu correo solo si lo escribes en el comentario.</p>
+
+<h2>Qué queda en tu dispositivo</h2>
+<p>El sitio guarda algunas cosas en el almacenamiento de tu navegador para funcionar entre visitas: tu idioma, tus resúmenes guardados, si ya usaste la lectura gratis, tu sesión y si ya viste la ventana de opinión. Puedes borrarlas eliminando los datos del sitio en tu navegador.</p>
+
+<h2>Lo que no hacemos</h2>
+<ul>
+<li>Sin publicidad y sin cookies publicitarias.</li>
+<li>Sin analítica ni scripts de seguimiento.</li>
+<li>No vendemos ni compartimos datos con nadie fuera de los servicios que aparecen abajo.</li>
+<li>Sin seguimiento por dirección IP. Cloudflare, como cualquier servidor, ve las direcciones IP por un momento para entregar el servicio.</li>
+</ul>
+
+<h2>Servicios que usamos</h2>
+<ul>
+<li><b>GitHub Pages</b> entrega los archivos del sitio.</li>
+<li><b>Cloudflare</b> ejecuta el intermediario y la pequeña base de datos con cuentas, resúmenes y opiniones.</li>
+<li><b>Google</b> provee el inicio de sesión y el modelo de IA para la lectura profunda.</li>
+<li><b>Google Fonts</b> y un servidor de librerías entregan las fuentes y un script auxiliar, por lo que ven una solicitud de tu navegador.</li>
+</ul>
+<p>Algunas de estas empresas procesan datos fuera del Reino Unido, incluso en Estados Unidos, con sus propias garantías.</p>
+
+<h2>Por qué podemos usar estos datos</h2>
+<p>Usamos los datos de la cuenta para darte el servicio que pediste. La lectura profunda solo se ejecuta cuando la pides. Las opiniones se usan para mejorar el producto.</p>
+
+<h2>Cuánto tiempo los guardamos</h2>
+<ul>
+<li>Cuenta y resúmenes: hasta que borres tu cuenta. Abre el menú de la cuenta, elige "Eliminar mi cuenta" y se borran de inmediato.</li>
+<li>Opiniones: hasta 24 meses.</li>
+<li>Chats y lecturas profundas: no se guardan.</li>
+</ul>
+
+<h2>Tus derechos</h2>
+<p>Puedes pedir una copia de tus datos, pedir que los corrijamos o borremos, u oponerte a su uso. Escríbenos por el enlace "Dar tu opinión". Si estás en el Reino Unido también puedes reclamar ante la Information Commissioner's Office en ico.org.uk.</p>
+
+<h2>Edad</h2>
+<p>WhatHappened es para personas adultas de 18 años o más.</p>
+
+<h2>Cambios</h2>
+<p>Si esta página cambia de forma importante, lo avisaremos en el sitio antes de que aplique.</p>
+</div>
+
+<footer><a href="./"><span data-l="en">Back to WhatHappened</span><span data-l="es">Volver a WhatHappened</span></a> · <a href="terms.html"><span data-l="en">Terms of use</span><span data-l="es">Condiciones de uso</span></a></footer>
+</div>
+<script>
+(function(){
+  function set(l,save){document.documentElement.setAttribute("lang",l);
+    document.getElementById("bEn").setAttribute("aria-pressed",l==="en");
+    document.getElementById("bEs").setAttribute("aria-pressed",l==="es");
+    if(save){try{localStorage.setItem("wh_lang",l);}catch(e){}}}
+  var l=null;try{l=localStorage.getItem("wh_lang");}catch(e){}
+  if(!l){l=(navigator.language||"en").slice(0,2);}
+  set(l==="es"?"es":"en",false);
+  document.getElementById("bEn").addEventListener("click",function(){set("en",true);});
+  document.getElementById("bEs").addEventListener("click",function(){set("es",true);});
+})();
+</script>
+</body>
+</html>
