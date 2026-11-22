@@ -804,8 +804,8 @@ function measures(D,ws){
     {key:"resp",label:"Responsiveness",score:rr.length?Math.round(rr.reduce(function(x,y){return x+y;},0)/rr.length):null,text:"Typical reply: "+A+" "+fmtMin(med[0])+", "+B+" "+fmtMin(med[1])+".",v:med},
     {key:"starts",label:"Who starts",score:bal(fs),text:Math.abs(fs-50)<8?"You start the day's conversation about equally.":(fs>50?A:B)+" starts "+Math.round(Math.max(fs,100-fs))+"% of the days.",v:fs}
   ];
-  if(aff){out.push({key:"warmth",label:"Warmth in writing",score:Math.round(Math.min(100,(aff[0]+aff[1])/2/12*100)),text:"Warm words, hearts or laughter in "+Math.round(aff[0])+"% of "+A+"'s messages and "+Math.round(aff[1])+"% of "+B+"'s.",v:aff});
-    out.push({key:"curiosity",label:"Curiosity",score:Math.round(Math.min(100,(q[0]+q[1])/2/15*100)),text:"Questions in "+Math.round(q[0])+"% of "+A+"'s messages and "+Math.round(q[1])+"% of "+B+"'s.",v:q});}
+  if(aff){out.push({key:"warmth",label:"Warmth in writing",score:Math.round(Math.min(100,(0.6*Math.min(aff[0],aff[1])+0.4*Math.max(aff[0],aff[1]))/12*100)),text:"Warm words, hearts or laughter in "+Math.round(aff[0])+"% of "+A+"'s messages and "+Math.round(aff[1])+"% of "+B+"'s.",v:aff});
+    out.push({key:"curiosity",label:"Curiosity",score:Math.round(Math.min(100,(0.6*Math.min(q[0],q[1])+0.4*Math.max(q[0],q[1]))/15*100)),text:"Questions in "+Math.round(q[0])+"% of "+A+"'s messages and "+Math.round(q[1])+"% of "+B+"'s.",v:q});}
   out.push({key:"time",label:"Time in touch",score:Math.round(Math.min(100,100*act/7)),text:"In touch about "+r1(act)+" days a week.",v:act});
   return out;
 }
