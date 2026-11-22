@@ -13,7 +13,8 @@
                                 for example https://cconcham.github.io
      AI_KEY            secret   your AI provider key
      AI_MODEL          text     model name
-     AI_URL            text     optional. Any OpenAI compatible chat completions address. Default: Google Gemini.
+     AI_URL            text     optional. Leave empty to use Google Gemini directly. Set it to an OpenAI compatible
+                                chat completions address to use another provider.
      PRO_CODES         secret   optional. Access codes, comma separated. A signed in user who enters one becomes Pro.
      PRO_EMAILS        text     optional. Emails that are always Pro, comma separated (for you and testers).
      WHY_MONTHLY_CAP   text     optional. Deep readings allowed per account per month. Default 30.
@@ -34,7 +35,7 @@
      {"kind":"type","sample":"..."}                     -> {text}      free
      {"prompt":"...","token":"..."}                     -> {text}      the deep reading, Pro only
 */
-const DEFAULT_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
 const GOOGLE_CERTS = "https://www.googleapis.com/oauth2/v3/certs";
 const SESSION_DAYS = 30;
 const TYPE_INSTRUCTION =
@@ -223,7 +224,7 @@ export default {
       const sample = String(body.sample || "").slice(0, 14000);
       if (sample.length < 200) return json({ error: "sample too short" }, 400);
       messages = [{ role: "system", content: TYPE_INSTRUCTION }, { role: "user", content: sample }];
-      maxTokens = 80;
+      maxTokens = 1024;
     } else {
       rec = await session();
       const codes = list(env.PRO_CODES).map((s) => s.toUpperCase());
@@ -244,16 +245,32 @@ export default {
         if ((rec.why[month] || 0) >= cap) return json({ error: "monthly limit reached" }, 429);
       }
       messages = [{ role: "user", content: prompt }];
-      maxTokens = 8000;
+      maxTokens = 16000;
     }
 
+    /* Google's own Gemini address is the default (it accepts the newer "AQ." keys in the x-goog-api-key header).
+       Set AI_URL to use any OpenAI compatible provider instead. */
+    const model = env.AI_MODEL || "gemini-3.8-flash";
+    const native = !env.AI_URL;
     let upstream;
     try {
-      upstream = await fetch(env.AI_URL || DEFAULT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.AI_KEY },
-        body: JSON.stringify({ model: env.AI_MODEL || "gemini-2.5-flash", messages, max_tokens: maxTokens, temperature: 0.3 }),
-      });
+      if (native) {
+        const sys = messages.find((m) => m.role === "system");
+        const body2 = {
+          contents: messages.filter((m) => m.role !== "system").map((m) => ({ role: "user", parts: [{ text: m.content }] })),
+          generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 },
+        };
+        if (sys) body2.systemInstruction = { parts: [{ text: sys.content }] };
+        upstream = await fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent", {
+          method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": env.AI_KEY }, body: JSON.stringify(body2),
+        });
+      } else {
+        upstream = await fetch(env.AI_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.AI_KEY },
+          body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.3 }),
+        });
+      }
     } catch { return json({ error: "AI unreachable" }, 502); }
     if (upstream.status === 429) return json({ error: "busy" }, 429);
     if (!upstream.ok) {
@@ -263,7 +280,13 @@ export default {
       return json({ error: "AI error", upstream: upstream.status, detail }, 502);
     }
     const data = await upstream.json();
-    const text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+    let text = "";
+    if (native) {
+      const parts = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+      if (Array.isArray(parts)) text = parts.filter((p) => p && typeof p.text === "string" && !p.thought).map((p) => p.text).join("");
+    } else {
+      text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+    }
     if (rec && text) {
       const month = new Date().toISOString().slice(0, 7);
       rec.why = { [month]: ((rec.why || {})[month] || 0) + 1 };
