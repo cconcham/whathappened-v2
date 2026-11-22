@@ -2761,7 +2761,32 @@ var TRT=[
 ["That did not work. Try again.", "Eso no funcionó. Inténtalo de nuevo."],
 ["Tap any point to read that week. Swipe sideways for the rest.", "Toca cualquier punto para leer esa semana. Desliza hacia los lados para ver el resto."],
 ["Move across the chart to read any week.", "Muévete por el gráfico para leer cualquier semana."],
-["in the chat, and still talking", "en el chat, y siguen hablando"]
+["in the chat, and still talking", "en el chat, y siguen hablando"],
+["For eleven months Alex and Sam wrote every day and answered each other within minutes.", "Durante once meses Alex y Sam se escribieron todos los días y se respondían en minutos."],
+["From late June Sam's replies began to take longer, first on weekdays and then all week, while Alex kept the same pace.", "Desde fines de junio las respuestas de Sam empezaron a tardar más, primero entre semana y luego toda la semana, mientras Alex mantuvo el mismo ritmo."],
+["Plans appear less often in July, and the ones Alex suggests are deferred more than they are accepted.", "Los planes aparecen menos en julio, y los que propone Alex se aplazan más de lo que se aceptan."],
+["In the last week of July the conversation drops to a few practical messages a week.", "En la última semana de julio la conversación baja a unos pocos mensajes prácticos por semana."],
+["The chat points most strongly to work and time.", "El chat apunta con más fuerza al trabajo y al tiempo."],
+["Sam started a new role in June and mentions long days in most messages after that.", "Sam empezó en un cargo nuevo en junio y menciona días largos en la mayoría de los mensajes desde entonces."],
+["There is some sign of routine setting in.", "Hay algún indicio de que se instaló la rutina."],
+["There is very little in the messages about money or about anyone else.", "Hay muy poco en los mensajes sobre dinero o sobre otra persona."],
+["“New role starts Monday, expect me to be useless for a month”", "“El lunes empiezo en el cargo nuevo, voy a estar inútil un mes”"],
+["“Still at the office, don't wait up”", "“Sigo en la oficina, no me esperes despierto”"],
+["Mentions of long hours rise sharply in the six weeks before the change.", "Las menciones de jornadas largas suben con fuerza en las seis semanas antes del cambio."],
+["“Can we do next weekend instead?”", "“¿Podemos mejor el próximo fin de semana?”"],
+["“I can't this week, sorry”", "“Esta semana no puedo, perdón”"],
+["Suggested plans are deferred more often from July.", "Los planes propuestos se aplazan más seguido desde julio."],
+["“Same place as always?”", "“¿El mismo lugar de siempre?”"],
+["Fewer jokes and photos in the last two months, though the sample is small.", "Menos bromas y fotos en los últimos dos meses, aunque la muestra es pequeña."],
+["“I don't want to talk about it tonight”", "“No quiero hablar de eso esta noche”"],
+["One tense exchange.", "Un intercambio tenso."],
+["No pattern of arguments.", "Sin un patrón de discusiones."],
+["Little discussion of long term plans either way.", "Poca conversación sobre planes a largo plazo de ambos lados."],
+["Almost no mention of money.", "Casi ninguna mención de dinero."],
+["Nothing in the messages points to this.", "Nada en los mensajes apunta a esto."],
+["These themes were found by matching words in the messages near the end, not by reading them.", "Estos temas se encontraron por coincidencia de palabras en los mensajes cerca del final, no leyéndolos."],
+["A word can be used in passing, so read the lines before trusting a score.", "Una palabra puede usarse de pasada, así que lee las líneas antes de confiar en un puntaje."],
+["Your own chat adds affection, curiosity, message length, photos, calls, matching style and the hours you wrote.", "Tu propio chat añade cariño, curiosidad, largo de los mensajes, fotos, llamadas, estilo parecido y las horas en que escribían."]
 ];
 /* Sentences with names, dates or numbers inside. $1, $2 ... are kept as they are. */
 var TRR=[
@@ -2940,7 +2965,8 @@ var TRR=[
 ["^This link covers (\\d+) relationships and you have used them\\.$", "Este enlace cubre $1 relaciones y ya las usaste."],
 ["^(?:Only )?(\\d+) messages were found\\.$", "Se encontraron $1 mensajes."],
 ["^This chat is mostly in (.+)\\.$", "Este chat está sobre todo en ⟦$1⟧."],
-["^This Telegram export is a (.+)\\.$", "Esta exportación de Telegram es un $1."]
+["^This Telegram export is a (.+)\\.$", "Esta exportación de Telegram es un $1."],
+["^(.+) \\(you\\)$", "$1 (tú)"]
 ];
 var TRMON={es:["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],pt:["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"],fr:["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."],de:["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],it:["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"]};
 var TRX_=null,TRRX_=null;
@@ -2978,7 +3004,7 @@ function trText(s){
   var out=trOne(core),n=/^(\d\. )(.+)$/.exec(core);
   if(!out&&n){var r=trOne(n[2]);if(r){out=n[1]+r;}}
   if(!out){var parts=trSplit(core),hit=false;
-    if(parts&&parts.length>1){var res=parts.map(function(p){var t=p.trim(),q=trOne(t);if(q){hit=true;return q;}return t;});if(hit){out=res.join(" ");}}}
+    if(parts&&parts.length>1){var res=parts.map(function(p,pi){var t=p.trim(),q=trOne(t),ld=pi?/^\s*/.exec(p)[0]:"";if(q){hit=true;return ld+q;}return ld+t;});if(hit){out=res.join("");}}}
   if(!out){out=core;}
   var mon=TRMON[UI_LANG];
   if(mon){out=out.replace(/\b(\d{1,2} )?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})\b/g,function(a,d,mo,y){return (d||"")+mon[MON.indexOf(mo)]+" "+y;});}
