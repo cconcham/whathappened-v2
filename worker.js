@@ -28,6 +28,8 @@
      {"kind":"save","token":"...","summaries":[...]}    -> {ok:true}
      {"kind":"redeem","token":"...","code":"..."}       -> {user}
      {"kind":"delete","token":"..."}                    -> {ok:true}   removes the account and everything stored
+     {"kind":"feedback","rating":4,"right":"partly","text":"...","ctx":{...}} -> {ok:true}
+                                                        stored as f:<time>. No names, no messages, no address.
      {"kind":"type","sample":"..."}                     -> {text}      free
      {"prompt":"...","token":"..."}                     -> {text}      the deep reading, Pro only
 */
@@ -166,6 +168,23 @@ export default {
       const sub = await readSession(env, body && body.token);
       return sub ? load(sub) : null;
     };
+
+    /* ----- feedback: a rating and a comment, from anyone ----- */
+    if (kind === "feedback") {
+      if (!db) return json({ error: "storage not configured" }, 500);
+      const rating = num(body.rating);
+      const text = str(body.text, 1500) || "";
+      if (!(rating >= 1 && rating <= 5) && !text.trim()) return json({ error: "empty" }, 400);
+      const c = body.ctx && typeof body.ctx === "object" ? body.ctx : {};
+      const rec = {
+        at: new Date().toISOString(), rating: rating >= 1 && rating <= 5 ? rating : null,
+        right: ["yes", "partly", "no"].includes(body.right) ? body.right : null, text: text.trim(),
+        ctx: { type: TYPES.includes(c.type) ? c.type : null, stage: str(c.stage, 12), lang: str(c.lang, 40), app: str(c.app, 12),
+               n: num(c.n), account: c.account === true, pro: c.pro === true, friend: c.friend === true, phone: c.phone === true, why: c.why === true },
+      };
+      await db.put("f:" + rec.at + ":" + Math.random().toString(36).slice(2, 8), JSON.stringify(rec));
+      return json({ ok: true });
+    }
 
     /* ----- accounts ----- */
     if (["auth", "me", "save", "redeem", "delete"].includes(kind)) {

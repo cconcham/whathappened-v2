@@ -95,6 +95,11 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 .zoombox.acctbox h3{padding-right:84px}
 .acctbox .btn{align-self:flex-start}
 .acctbox .err{color:var(--warn);min-height:1em;margin:0}
+#fbText{width:100%;min-height:96px;border:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:14px;padding:12px 14px;font:inherit;resize:vertical;background:#fff}
+.fbrow{display:flex;gap:8px;flex-wrap:wrap}
+.fbrow button{font:600 15px var(--body);min-width:48px;min-height:44px;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--ink) 22%,transparent);background:#fff;color:var(--ink);cursor:pointer;padding:8px 16px}
+.fbrow button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+footer .linkbtn{display:inline;padding:0 0 0 6px;min-height:0}
 .nudge{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding:14px 18px;border-radius:18px;background:color-mix(in srgb,var(--a) 8%,#fff);border:1px solid color-mix(in srgb,var(--a) 22%,transparent)}
 .nudge[hidden]{display:none}
 .nudge p{margin:0;flex:1 1 260px}
@@ -585,7 +590,23 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
   <details><summary>The other person is in this file too.</summary><p class="muted">The export holds someone else's private messages. Keep the report to yourself, and do not use it to confront, monitor or expose them.</p></details>
 </section>
 
-<footer>WhatHappened is a prototype. It is not counselling or advice. If a breakup is weighing on you heavily, talking to someone you trust or a professional will help more than a chart.</footer>
+<footer>WhatHappened is a prototype. It is not counselling or advice. If a breakup is weighing on you heavily, talking to someone you trust or a professional will help more than a chart. <button class="linkbtn" id="fbOpen" type="button">Give feedback</button></footer>
+</div>
+
+<div id="fb" class="zoom" hidden role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+  <div class="zoombox acctbox">
+    <button id="fbClose" class="zoomx" type="button">Close</button>
+    <p class="eyebrow">Feedback</p>
+    <h3 id="fbTitle">Was this useful?</h3>
+    <div class="fbrow" id="fbStars" role="group" aria-label="Rating from 1 to 5"></div>
+    <p class="small muted">1 is not at all. 5 is very.</p>
+    <p class="small" id="fbRightAsk">Did it read the relationship right?</p>
+    <div class="fbrow" id="fbRight" role="group" aria-label="Did it read the relationship right"></div>
+    <textarea id="fbText" maxlength="1500" placeholder="What was missing, wrong or confusing? What would make you use it again?" aria-label="Your comment"></textarea>
+    <button class="btn" id="fbSend" type="button">Send feedback</button>
+    <p class="small err" id="fbErr" role="alert"></p>
+    <p class="small muted">This sends your rating and comment, plus the kind of relationship and the chat's language. No names and no messages.</p>
+  </div>
 </div>
 
 <div id="acct" class="zoom" hidden role="dialog" aria-modal="true" aria-labelledby="acctTitle">
@@ -1675,6 +1696,7 @@ function fillPro(D,hasClaude){
     if(isPro()){btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to "+(hasClaude?"Claude":"the AI")+". Nothing is sent before you press it.";}
     else{btn.textContent="Unlock the deep reading";note.textContent="Part of Pro. Nothing is sent anywhere until you unlock it and press the button. Everything else on this page stays on this device.";}}
   else if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
+  else if(REPORT_ENDPOINT&&friendCode()){code.value=friendCode();code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Free with your friends and family link. Pressing this sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else if(REPORT_ENDPOINT){code.hidden=false;btn.textContent="Unlock the deep reading";note.textContent="Enter your access code. Pressing the button sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else{code.hidden=true;btn.disabled=true;btn.textContent="Opening soon";note.textContent="The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.";}
 }
@@ -2046,7 +2068,11 @@ try{if(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches&&window.
 var GATES={chats:"account",more:"account",map:"account",why:"pro"};
 var acct=null,acctNext=null,pendingLoad=null,acctView=null;
 try{acct=JSON.parse(localStorage.getItem("wh_acct_v1")||"null");}catch(e){acct=null;}
+function friendCode(){
+  try{var m=/friends?[=:\-]([A-Za-z0-9_\-]{3,40})/i.exec(location.hash||"");if(m){localStorage.setItem("wh_friend_v1",m[1]);return m[1];}return localStorage.getItem("wh_friend_v1")||null;}catch(e){return null;}
+}
 function acctMode(){
+  if(friendCode()){return "off";}
   var hs="";try{hs=location.hash||"";}catch(e){}
   if(ACCOUNT_ENDPOINT&&GOOGLE_CLIENT_ID&&(ACCOUNTS_PUBLIC||/live/i.test(hs))){return "live";}
   var demo=false;try{demo=/demo/i.test(location.hash||"")||!!(window.claude&&window.claude.use);}catch(e){}
@@ -2172,6 +2198,40 @@ $("acctRedeem").addEventListener("click",async function(){
 ["nudgeTopBtn","nudgeMoreBtn"].forEach(function(id){$(id).addEventListener("click",function(){$("story").scrollIntoView({behavior:"smooth",block:"start"});});});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("acct").hidden){acctNext=null;closeAcct();}});
 renderAcct();refreshAcct();
+/* ---------- feedback ---------- */
+var fbRating=null,fbRight=null,fbShown=false;
+function fbRecent(){try{return Date.now()-(+localStorage.getItem("wh_fb_v1")||0)<14*864e5;}catch(e){return false;}}
+function fbPaint(){
+  var st=$("fbStars"),rt=$("fbRight");st.replaceChildren();rt.replaceChildren();
+  [1,2,3,4,5].forEach(function(n){var b=h("button",null,String(n));b.type="button";b.setAttribute("aria-pressed",fbRating===n?"true":"false");b.addEventListener("click",function(){fbRating=n;fbPaint();});st.appendChild(b);});
+  [["yes","Yes"],["partly","Partly"],["no","No"]].forEach(function(o){var b=h("button",null,o[1]);b.type="button";b.setAttribute("aria-pressed",fbRight===o[0]?"true":"false");b.addEventListener("click",function(){fbRight=o[0];fbPaint();});rt.appendChild(b);});
+}
+function openFb(auto){
+  if(auto){var inClaude=false;try{inClaude=!!(window.claude&&window.claude.use);}catch(e){}
+    if(fbShown||fbRecent()||inClaude||!$("acct").hidden||!$("zoom").hidden||!current||current.example){return;}}
+  fbShown=true;try{localStorage.setItem("wh_fb_v1",String(Date.now()));}catch(e){}
+  fbRating=null;fbRight=null;$("fbErr").textContent="";$("fbTitle").textContent="Was this useful?";$("fbSend").disabled=false;$("fbSend").textContent="Send feedback";
+  var has=!!(current&&!current.example);$("fbRightAsk").hidden=!has;$("fbRight").hidden=!has;
+  fbPaint();$("fb").hidden=false;
+}
+function closeFb(){$("fb").hidden=true;}
+async function sendFb(){
+  var text=String($("fbText").value||""),D=current&&!current.example?current:null,c=active>=0&&chats[active]?chats[active]:null,phone=false,why=false;
+  if(!fbRating&&!text.trim()){$("fbErr").textContent="Pick a rating or write a line first.";return;}
+  try{phone=document.body.classList.contains("is-phone");}catch(e){}
+  try{why=!$("storyCard").hidden&&!!D;}catch(e){}
+  $("fbSend").disabled=true;$("fbSend").textContent="Sending ...";
+  try{
+    await api({kind:"feedback",rating:fbRating,right:fbRight,text:text,ctx:{type:D?D.type:null,stage:D?stageOf(D):null,lang:D?(D.lang&&D.lang.name)||"English":null,app:c?c.src:null,n:D?Math.round(D.msgs.length/100)*100:null,account:signedIn(),pro:isPro(),friend:!!friendCode(),phone:phone,why:why}});
+    $("fbTitle").textContent="Thank you. That helps.";$("fbText").value="";$("fbSend").textContent="Sent";setTimeout(closeFb,1400);
+  }catch(e){$("fbErr").textContent="Could not send just now. Try again.";$("fbSend").disabled=false;$("fbSend").textContent="Send feedback";}
+}
+$("fbOpen").addEventListener("click",function(){openFb(false);});
+$("fbClose").addEventListener("click",closeFb);
+$("fbSend").addEventListener("click",sendFb);
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("fb").hidden){closeFb();}});
+/* ask once, when a reader reaches the end of their own results */
+try{if(window.IntersectionObserver){new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){setTimeout(function(){openFb(true);},1500);}});},{threshold:0.4}).observe($("limits"));}}catch(e){}
 /* ---------- enlarge a chart ---------- */
 var zoomBack=null;
 function openZoom(host){
