@@ -256,7 +256,12 @@ export default {
       });
     } catch { return json({ error: "AI unreachable" }, 502); }
     if (upstream.status === 429) return json({ error: "busy" }, 429);
-    if (!upstream.ok) return json({ error: "AI error" }, 502);
+    if (!upstream.ok) {
+      /* pass on the provider's own status and message so a wrong key or model name is easy to spot */
+      let detail = "";
+      try { const e = await upstream.json(); const x = Array.isArray(e) ? e[0] : e; detail = String((x && x.error && (x.error.message || x.error.status)) || "").slice(0, 240); } catch {}
+      return json({ error: "AI error", upstream: upstream.status, detail }, 502);
+    }
     const data = await upstream.json();
     const text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
     if (rec && text) {
