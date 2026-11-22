@@ -1794,9 +1794,9 @@ function show(msgs,me){
   $("me0").setAttribute("aria-pressed",me?"true":"false");$("me1").setAttribute("aria-pressed","false");
   $("typeAsk").textContent=chosenType?"You set this to":aiType?"Read by AI as":"Read as";
   $("typeNow").textContent=(D.type==="other"?"something else":TYPE_LABEL[D.type].toLowerCase()+(D.type==="romantic"?" relationship":D.type==="married"?" couple":D.type==="work"?"s":""));
-  var tr=$("typeRow");tr.replaceChildren();tr.hidden=true;$("typeFix").setAttribute("aria-expanded","false");
+  var tr=$("typeRow");tr.replaceChildren();tr.hidden=true;$("typeFix").setAttribute("aria-expanded","false");$("typeFix").hidden=false;
   Object.keys(TYPE_LABEL).forEach(function(k){var b=h("button",null,TYPE_LABEL[k]);b.type="button";b.setAttribute("aria-pressed",k===D.type?"true":"false");b.addEventListener("click",function(){chosenType=k;try{show(lastMsgs,lastMe);}catch(e){}});tr.appendChild(b);});
-  if(D.guess.nolang&&!chosenType&&!aiType){$("typeAsk").textContent="Kind of relationship";$("typeNow").textContent="not read";tr.hidden=false;$("typeFix").setAttribute("aria-expanded","true");}
+  if(D.guess.nolang&&!chosenType&&!aiType){$("typeAsk").textContent="Kind of relationship";$("typeNow").textContent="choose one";tr.hidden=false;$("typeFix").hidden=true;Array.prototype.forEach.call(tr.children,function(b){b.setAttribute("aria-pressed","false");});}
   if(REPORT_ENDPOINT){$("doneMeta").textContent+=" A short sample goes to the AI to recognise the kind of relationship.";}
   if((!srcA||srcA==="WhatsApp")&&D.msgs.length>=39900&&D.msgs.length<=40100){$("doneMeta").textContent+=" WhatsApp stops an export at 40,000 messages, so the start of this chat may be missing.";}
   if(active>=0&&chats[active]){var cA=chats[active];cA.me=me;cA.chosenType=chosenType;cA.aiType=aiType;try{cA.summary=summarise(D);}catch(e){}saveMap();}
@@ -1927,7 +1927,7 @@ $("mapClear").addEventListener("click",function(){chats=[];active=-1;savedMap=[]
 $("typeFix").addEventListener("click",function(){var r=$("typeRow");r.hidden=!r.hidden;this.setAttribute("aria-expanded",r.hidden?"false":"true");});
 $("moreBtn").addEventListener("click",function(){var w=$("moreWrap"),open=w.hidden;w.hidden=!open;this.setAttribute("aria-expanded",open?"true":"false");this.textContent=open?"Hide the extra analysis":"See more analysis";});
 $("seeBtn").addEventListener("click",function(){$("answer").scrollIntoView({behavior:"smooth",block:"start"});});
-$("again").addEventListener("click",function(){$("done").hidden=true;$("intake").hidden=false;file.value="";$("paste").value="";});
+$("again").addEventListener("click",function(){setStatus("");$("done").hidden=true;$("intake").hidden=false;file.value="";$("paste").value="";});
 $("usePaste").addEventListener("click",function(){var t=$("paste").value;if(t.trim().length<50){setStatus("Paste some messages into the box first.",true);return;}load(null,t);});
 ["ios","android"].forEach(function(k){$("os-"+k).addEventListener("click",function(){$("demo").setAttribute("data-os",k);$("os-ios").setAttribute("aria-pressed",k==="ios"?"true":"false");$("os-android").setAttribute("aria-pressed",k==="android"?"true":"false");});});
 var tabs=["paste","file"];
