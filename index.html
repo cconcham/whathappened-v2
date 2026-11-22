@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>WhatHappened</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -342,6 +345,15 @@ body.is-phone .pastewrap{display:flex}
 .deep .lead{font-weight:700;font-size:20px;line-height:1.3}
 .deep h3{margin-top:14px}
 #deepOut{display:flex;flex-direction:column;gap:10px}
+.mapsvg svg{width:100%;height:auto;display:block}
+.mapsvg .node{cursor:pointer;outline:none}
+.mapsvg .node:focus-visible circle{stroke-width:4}
+.mapsvg text{font-family:var(--body);fill:var(--ink)}
+.mapsvg .nm{font-size:14px;font-weight:800}
+.mapsvg .st{font-size:11px;fill:var(--muted)}
+.mapsvg .num{font-size:12px;font-weight:800;fill:#fff}
+.mapsvg .you{font-size:13px;font-weight:800;fill:#fff}
+.mapsvg .ring{font-size:10px;fill:var(--muted);letter-spacing:.04em}
 /* ---------- phones ---------- */
 #threads{touch-action:pan-y}
 .linkbtn{min-height:44px}
@@ -372,6 +384,7 @@ body.is-phone .pastewrap{display:flex}
   .chart text{font-size:13px}
 }
 @media (max-width:380px){.tiles{grid-template-columns:1fr}}
+@media (max-width:820px){.mapsvg .nm{font-size:17px}.mapsvg .st{font-size:14px}.mapsvg .num{font-size:14px}.mapsvg .ring{font-size:13px}}
 @media (max-width:820px){.zoom{padding:0}.zoombox{border-radius:0;width:100%;height:100%;padding:18px 16px}.zoomchart{min-width:720px}.zoomchart text{font-size:10px}.zoombox h3{font-size:20px}}
 </style>
 </head>
@@ -430,7 +443,7 @@ body.is-phone .pastewrap{display:flex}
     </div>
         </div>
         <button class="btn" id="pick" type="button">Choose your chat file</button>
-        <input type="file" id="file" accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed" hidden>
+        <input type="file" id="file" multiple accept=".txt,.zip,text/plain,application/zip,application/x-zip-compressed" hidden>
         <div class="pastewrap" id="pasteWrap">
           <button class="btn ghost" id="pasteBtn" type="button">Paste the copied file</button>
           <div class="pastezone" id="pasteZone" contenteditable="true" inputmode="none" role="textbox" aria-label="Paste your chat file here" data-ph="If the button does nothing: press and hold here, then tap Paste"></div>
@@ -445,7 +458,7 @@ body.is-phone .pastewrap{display:flex}
         <div class="whoami"><span class="small muted" id="whoAsk">Which one are you?</span><div class="tabs os" role="group" aria-label="Which one are you"><button type="button" id="me0" aria-pressed="false"></button><button type="button" id="me1" aria-pressed="false"></button></div></div>
         <div class="whoami"><span class="small muted" id="typeAsk">Read as</span><b id="typeNow"></b><button class="linkbtn" id="typeFix" type="button" aria-expanded="false" aria-controls="typeRow">Not right? Change</button></div>
         <div class="tabs os typerow" id="typeRow" role="group" aria-label="Kind of relationship" hidden></div>
-        <div class="donebtns"><button class="btn" id="seeBtn" type="button">See what happened</button><button class="linkbtn" id="again" type="button">Use another chat</button></div>
+        <div class="donebtns"><button class="btn" id="seeBtn" type="button">See what happened</button><button class="linkbtn" id="again" type="button">Add more chats</button></div>
       </div>
       <p id="status" role="status"></p>
     </div>
@@ -462,6 +475,19 @@ body.is-phone .pastewrap{display:flex}
 </section>
 
 <div class="banner" id="banner"><strong>Example report.</strong><span>The numbers below come from an invented couple, Alex and Sam. Drop your own chat to replace them.</span></div>
+
+<section class="sec" id="mapSec" hidden>
+  <h2>Your map</h2>
+  <p class="say" id="mapSay"></p>
+  <div class="card mapcard">
+    <div class="leg" id="mapLegend"></div>
+    <div class="mapsvg" id="mapSvg"></div>
+    <p class="small muted" id="mapNote">Closer to the centre means stronger. Dashed means it ended or went quiet. Tap a name to open its full reading.</p>
+  </div>
+  <div class="reasons" id="mapCats"></div>
+  <div class="donebtns"><button class="btn alt" id="mapAdd" type="button">Add more chats</button><button class="linkbtn" id="mapClear" type="button">Clear the map</button></div>
+  <p class="small muted">You can choose several exported chats at once. Only a summary of each is kept, in this browser: names, type, state and scores. No messages are stored.</p>
+</section>
 
 <section class="sec" id="answer">
   <h2>In short</h2>
@@ -1381,25 +1407,128 @@ function show(msgs,me){
   var tr=$("typeRow");tr.replaceChildren();tr.hidden=true;$("typeFix").setAttribute("aria-expanded","false");
   Object.keys(TYPE_LABEL).forEach(function(k){var b=h("button",null,TYPE_LABEL[k]);b.type="button";b.setAttribute("aria-pressed",k===D.type?"true":"false");b.addEventListener("click",function(){chosenType=k;try{show(lastMsgs,lastMe);}catch(e){}});tr.appendChild(b);});
   if(REPORT_ENDPOINT){$("doneMeta").textContent+=" A short sample goes to the AI to recognise the kind of relationship.";}
+  if(D.msgs.length>=39900&&D.msgs.length<=40100){$("doneMeta").textContent+=" WhatsApp stops an export at 40,000 messages, so the start of this chat may be missing.";}
+  if(active>=0&&chats[active]){var cA=chats[active];cA.me=me;cA.chosenType=chosenType;cA.aiType=aiType;try{cA.summary=summarise(D);}catch(e){}saveMap();}
+  renderMap();
   $("intake").hidden=true;$("done").hidden=false;
 }
-async function load(f,pasted){
-  try{
-    setStatus(pasted?"Reading the pasted text ...":"Reading "+f.name+" ...");
-    var text=pasted!=null?pasted:await readFile(f),msgs=parseChat(text);
-    if(msgs.length<(pasted!=null?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted!=null?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is text from a WhatsApp chat.");}
-    chosenType=null;aiType=null;lastExport=pasted!=null?Date.now():(lastZipDate||(f&&f.lastModified)||null);lastMsgs=msgs;show(msgs,guessMe(msgs,f?f.name:null));classifyAI(current);
-    if(window.innerWidth<=820){$("drop").scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
-  }catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);}
+/* ---------- several chats and the map ---------- */
+var chats=[],active=-1,savedMap=[];
+var CAT={romantic:"Partner",married:"Partner",family:"Family",friend:"Friends",client:"Work",work:"Work",other:"Other"};
+var CATC={Partner:"#FF6FAE",Family:"#FF8A4C",Friends:"#3D6BFF",Work:"#14162B",Other:"#9AA0B5"};
+try{savedMap=JSON.parse(localStorage.getItem("wh_map_v2")||"[]")||[];if(!Array.isArray(savedMap)){savedMap=[];}}catch(e){savedMap=[];}
+function saveMap(){try{var keep={},out=[];chats.forEach(function(c){if(c.summary){keep[c.summary.key]=1;out.push(c.summary);}});savedMap.forEach(function(s){if(!keep[s.key]){out.push(s);}});savedMap=out;localStorage.setItem("wh_map_v2",JSON.stringify(out));}catch(e){}}
+function peopleOf(msgs){var count={};msgs.forEach(function(m){count[m.who]=(count[m.who]||0)+1;});return Object.keys(count).sort(function(a,b){return count[b]-count[a];}).slice(0,2);}
+function prepare(D,c){
+  var g=guessType(D);D.type=c.chosenType||c.aiType||g.type;D.guess=g;D.silent=silenceOf(D,c.exportAt);D.mode=D.change!=null?"ended":"active";
+  var W=D.weeks,ms,biz=D.type==="client"||D.type==="work";
+  if(D.mode==="active"){var ws=W.slice(Math.max(0,W.length-27),Math.max(1,W.length-1));ms=measures(D,ws);var dr=direction(D);if(dr){ms.push(dr);}if(biz){var ch=chasing(D,ws[0].start);if(ch){ms.push(ch);}}}
+  else{var cc=D.change;ms=measures(D,W.slice(Math.max(0,cc-26),cc));if(biz){var ch2=chasing(D,W[Math.max(0,cc-26)].start);if(ch2){ms.push(ch2);}}}
+  D.ms=ms;D.health=health(D,ms);return D;
 }
+function summarise(D){
+  var H=D.health&&D.health.score!=null?D.health:health(D,D.ms||[]),st=D.mode==="ended"?(D.gradual?"faded":"ended"):D.silent?"silent":"active";
+  return {key:D.full.slice().sort().join("|"),name:D.names[1],me:D.names[0],type:D.type,state:st,
+    since:st==="active"?null:iso(st==="silent"?D.silent.since:D.weeks[D.change].start),score:H.score,word:H.word,n:D.msgs.length,from:iso(D.msgs[0].t),to:iso(D.msgs[D.msgs.length-1].t)};
+}
+function commonMe(){
+  if(chats.length<2){return null;}
+  var cnt={};chats.forEach(function(c){c.people.forEach(function(p){cnt[p]=(cnt[p]||0)+1;});});
+  var all=Object.keys(cnt).filter(function(p){return cnt[p]===chats.length;});
+  return all.length===1?all[0]:null;
+}
+function mapItems(){
+  var items=chats.map(function(c,i){var o={idx:i};for(var k in c.summary){o[k]=c.summary[k];}return o;}),keys={};
+  items.forEach(function(x){keys[x.key]=1;});
+  savedMap.forEach(function(s){if(!keys[s.key]){var o={idx:-1,saved:true};for(var k in s){o[k]=s[k];}items.push(o);}});
+  return items;
+}
+function stateWord(x){return x.state==="active"?(x.word||""):x.state==="silent"?"gone quiet":x.state==="faded"?"faded":"ended";}
+function renderMap(){
+  var sec=$("mapSec"),items=mapItems();
+  if(!items.length){sec.hidden=true;return;}
+  sec.hidden=false;
+  var order=["Partner","Family","Friends","Work","Other"];
+  items.sort(function(a,b){var ca=order.indexOf(CAT[a.type]||"Other"),cb=order.indexOf(CAT[b.type]||"Other");return ca-cb||(b.score||0)-(a.score||0);});
+  /* sentence */
+  var groups={};items.forEach(function(x){var c=CAT[x.type]||"Other";(groups[c]=groups[c]||[]).push(x);});
+  var avgs=order.filter(function(c){return groups[c];}).map(function(c){var a=groups[c].filter(function(x){return x.score!=null&&x.state==="active";});return {c:c,n:groups[c].length,quiet:groups[c].filter(function(x){return x.state!=="active";}).length,avg:a.length?Math.round(a.reduce(function(s,x){return s+x.score;},0)/a.length):null};});
+  var scored=avgs.filter(function(a){return a.avg!=null;}).sort(function(a,b){return b.avg-a.avg;}),quiet=items.filter(function(x){return x.state!=="active";}).length,say;
+  var nm={Partner:"your partner",Family:"family",Friends:"friends",Work:"work",Other:"others"};
+  if(items.length===1){say="One relationship on the map so far. Add two or three more to see how they compare.";}
+  else if(scored.length>=2&&scored[0].avg-scored[scored.length-1].avg>=6){say="Strongest with "+nm[scored[0].c]+". Weakest with "+nm[scored[scored.length-1].c]+".";}
+  else if(scored.length>=2){say="Much the same across "+scored.map(function(a){return nm[a.c];}).join(" and ")+".";}
+  else{say=items.length+" relationships on the map.";}
+  if(items.length>1&&quiet){say+=" "+quiet+" of "+items.length+(quiet===1?" has":" have")+" ended or gone quiet.";}
+  $("mapSay").textContent=say;
+  /* legend */
+  var lg=$("mapLegend");lg.replaceChildren();order.forEach(function(c){if(!groups[c]){return;}var sp=h("span");var b=h("b");b.style.background=CATC[c];sp.appendChild(b);sp.appendChild(document.createTextNode(c));lg.appendChild(sp);});
+  /* picture */
+  var W=640,H=440,cx=320,cy=212,host=$("mapSvg");host.replaceChildren();
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":"A map of your relationships. Closer to the centre means stronger."});
+  [[78,"close"],[132,"steady"],[188,"distant or quiet"]].forEach(function(r){svg.appendChild(el("ellipse",{cx:cx,cy:cy,rx:r[0]*1.45,ry:r[0],fill:"none",stroke:"var(--line)","stroke-width":1,"stroke-dasharray":r[0]===188?"3 5":""}));svg.appendChild(el("text",{x:cx,y:cy-r[0]+13,"text-anchor":"middle",class:"ring"},r[1]));});
+  var n=items.length;
+  items.forEach(function(x,i){
+    var ang=(-90+(n===1?0:i*360/n)+(n>1?180/n:0))*Math.PI/180,act=x.state==="active",sc=x.score==null?50:x.score;
+    var r=act?Math.min(176,78+(100-sc)*1.15):188,px=cx+r*1.45*Math.cos(ang),py=cy+r*Math.sin(ang),col=CATC[CAT[x.type]||"Other"],br=15+Math.min(13,Math.sqrt(x.n||1)/7);
+    var g=el("g",{class:"node"+(x.idx===active?" on":""),tabindex:0,role:"button","aria-label":x.name+", "+(TYPE_LABEL[x.type]||"")+", "+stateWord(x)});
+    g.appendChild(el("line",{x1:cx,y1:cy,x2:px.toFixed(1),y2:py.toFixed(1),stroke:col,"stroke-width":act?2:1.5,opacity:act?0.45:0.3,"stroke-dasharray":act?"":"4 5"}));
+    if(x.idx===active){g.appendChild(el("circle",{cx:px.toFixed(1),cy:py.toFixed(1),r:br+6,fill:"none",stroke:col,"stroke-width":2,opacity:0.5}));}
+    g.appendChild(el("circle",{cx:px.toFixed(1),cy:py.toFixed(1),r:br,fill:act?col:"#fff",stroke:col,"stroke-width":2,"stroke-dasharray":act?"":"4 4",opacity:x.saved?0.6:1}));
+    if(act&&x.score!=null){g.appendChild(el("text",{x:px.toFixed(1),y:(py+5).toFixed(1),"text-anchor":"middle",class:"num"},String(x.score)));}
+    var below=py<cy-40?false:true,ty=below?py+br+17:py-br-21;
+    g.appendChild(el("text",{x:px.toFixed(1),y:ty.toFixed(1),"text-anchor":"middle",class:"nm"},x.name));
+    g.appendChild(el("text",{x:px.toFixed(1),y:(ty+15).toFixed(1),"text-anchor":"middle",class:"st"},stateWord(x).toLowerCase()+(x.since&&!act?" since "+fmtDate(new Date(x.since+"T12:00:00")):"")));
+    var go=function(){if(x.idx>=0){openChat(x.idx);$("answer").scrollIntoView({behavior:"smooth",block:"start"});}else{$("mapNote").textContent="That one is a saved summary. Add the chat again to open its full reading.";}};
+    g.addEventListener("click",go);g.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+    svg.appendChild(g);
+  });
+  svg.appendChild(el("circle",{cx:cx,cy:cy,r:30,fill:"var(--ink)"}));svg.appendChild(el("text",{x:cx,y:cy+5,"text-anchor":"middle",class:"you"},"You"));
+  host.appendChild(svg);
+  /* by category */
+  var cats=$("mapCats");cats.replaceChildren();
+  avgs.forEach(function(a){var c=h("div","card reason"),hd=h("div","head");hd.appendChild(h("h3",null,a.c));hd.appendChild(h("span","score",a.avg==null?"none active":a.avg+" / 100"));c.appendChild(hd);
+    var bar=h("div","bar"),sp=h("span");sp.style.width=(a.avg||0)+"%";sp.style.background=CATC[a.c];bar.appendChild(sp);c.appendChild(bar);
+    c.appendChild(h("p","note",groups[a.c].map(function(x){return x.name;}).join(", ")+"."+(a.quiet?" "+a.quiet+(a.quiet===1?" has":" have")+" ended or gone quiet.":"")));cats.appendChild(c);});
+  cats.hidden=items.length<2;
+}
+function openChat(i){
+  var c=chats[i];if(!c){return;}
+  active=i;lastMsgs=c.msgs;lastExport=c.exportAt;chosenType=c.chosenType||null;aiType=c.aiType||null;
+  show(c.msgs,c.me);
+}
+async function readOne(f,pasted){
+  var text=pasted!=null?pasted:await readFile(f),msgs=parseChat(text);
+  if(msgs.length<(pasted!=null?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted!=null?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is text from a WhatsApp chat.");}
+  var people=peopleOf(msgs);
+  return {key:people.slice().sort().join("|"),people:people,msgs:msgs,fname:f?f.name:null,exportAt:pasted!=null?Date.now():(lastZipDate||(f&&f.lastModified)||null),me:guessMe(msgs,f?f.name:null),chosenType:null,aiType:null,summary:null};
+}
+async function loadMany(files,pasted){
+  var added=[],errors=[],list=pasted!=null?[null]:files;
+  for(var i=0;i<list.length;i++){
+    setStatus(pasted!=null?"Reading the pasted text ...":"Reading "+list[i].name+(list.length>1?" ("+(i+1)+" of "+list.length+")":"")+" ...");
+    try{var c=await readOne(list[i],pasted);analyse(c.msgs,c.me);var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}}
+    catch(e){errors.push((list[i]&&list[i].name?list[i].name+": ":"")+(e&&e.message?e.message:"could not be read."));}
+  }
+  if(!added.length){setStatus(errors[0]||"That file could not be read.",true);return;}
+  var me=commonMe();
+  chats.forEach(function(c,k){if(me){c.me=me;}try{c.summary=summarise(prepare(analyse(c.msgs,c.me),c));}catch(e){}});
+  try{openChat(added[0]);classifyAI(current);}catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);return;}
+  if(errors.length){setStatus(added.length+" added. "+errors.length+" could not be read: "+errors[0],true);}
+  var target=chats.length>1?$("mapSec"):(window.innerWidth<=820?$("drop"):null);
+  if(target){target.scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
+}
+function load(f,pasted){return loadMany(f?[f]:[],pasted);}
 [0,1].forEach(function(k){$("me"+k).addEventListener("click",function(){if(lastMsgs&&current&&current.full){try{show(lastMsgs,current.full[k]);}catch(e){}}});});
 var drop=$("drop"),file=$("file");
 $("pick").addEventListener("click",function(){file.click();});
-file.addEventListener("change",function(){if(file.files[0]){load(file.files[0]);}});
+file.addEventListener("change",function(){if(file.files&&file.files.length){loadMany(Array.prototype.slice.call(file.files));}});
 ["dragenter","dragover"].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over");});});
 ["dragleave","drop"].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
-document.addEventListener("drop",function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){load(f);}});
+document.addEventListener("drop",function(e){var fs=e.dataTransfer&&e.dataTransfer.files;if(fs&&fs.length){loadMany(Array.prototype.slice.call(fs));}});
 $("write").addEventListener("click",writeReport);
+$("mapAdd").addEventListener("click",function(){$("done").hidden=true;$("intake").hidden=false;file.value="";$("tab-file").click();$("drop").scrollIntoView({behavior:"smooth",block:"start"});});
+$("mapClear").addEventListener("click",function(){chats=[];active=-1;savedMap=[];try{localStorage.removeItem("wh_map_v2");}catch(e){}renderMap();});
 $("typeFix").addEventListener("click",function(){var r=$("typeRow");r.hidden=!r.hidden;this.setAttribute("aria-expanded",r.hidden?"false":"true");});
 $("moreBtn").addEventListener("click",function(){var w=$("moreWrap"),open=w.hidden;w.hidden=!open;this.setAttribute("aria-expanded",open?"true":"false");this.textContent=open?"Hide the extra analysis":"See more analysis";});
 $("seeBtn").addEventListener("click",function(){$("answer").scrollIntoView({behavior:"smooth",block:"start"});});
@@ -1468,6 +1597,18 @@ document.addEventListener("keydown",function(e){
   if(e.key==="Escape"){closeZoom();return;}
   if((e.key==="Enter"||e.key===" ")&&e.target&&e.target.classList&&e.target.classList.contains("chart")){e.preventDefault();openZoom(e.target);}
 });
+/* a chat shared straight into the installed app (Android): the service worker left it in a local cache */
+(async function(){
+  try{if("serviceWorker" in navigator&&/^https:/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(function(){});}}catch(e){}
+  try{
+    if(!/[?&]shared=1/.test(location.search)||!window.caches){return;}
+    var cache=await caches.open("wh-shared"),cnt=await cache.match("shared-count"),n=cnt?parseInt(await cnt.text(),10)||0:0,files=[];
+    for(var i=0;i<n;i++){var r=await cache.match("shared-"+i);if(r){var b=await r.blob();files.push(new File([b],decodeURIComponent(r.headers.get("X-Name")||"chat.zip"),{lastModified:parseInt(r.headers.get("X-Date"),10)||Date.now()}));}await cache.delete("shared-"+i);}
+    await cache.delete("shared-count");try{history.replaceState(null,"",location.pathname);}catch(e){}
+    if(files.length){loadMany(files);}
+  }catch(e){}
+})();
+try{renderMap();}catch(e){}
 /* first paint: the example */
 current=exampleData();render(current);
 $("storyText").className="story";$("storyText").textContent=EX_STORY;renderReasons(EX_REASONS,true);
