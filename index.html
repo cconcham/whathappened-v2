@@ -760,23 +760,34 @@ var TW={romantic:{noun:"relationship",end:"breakup"},married:{noun:"marriage",en
 var TRX={
  rom:/\b(love you|i love u|luv u|my love|babe|baby|bae|honey|sweetheart|darling|miss you|kiss(es)?|te amo|te quiero|mi amor|amor|cari[ñn]o|guap[ao]|hermos[ao]|bes(o|os|itos)|boyfriend|girlfriend|novi[oa]|date night|sexy|cuddle)\b|❤|😘|🥰|😍|💕|💋/i,
  mar:/\b(husband|wife|hubby|wifey|the kids|our kids|the children|school run|nursery|daycare|mortgage|in-?laws|anniversary|espos[oa]|marido|mi mujer|los ni[ñn]os|suegr[oa]s?|hipoteca|colegio)\b/i,
- fam:/(^|[,!?.]\s*|\b(hi|hey|hello|hola|thanks|thank you|gracias|ok|yes|no|love you|te quiero)\s+)(mum|mom|mummy|mam[aá]|dad|pap[aá]|bro|sis|hermano|hermana|hij[oa]|son|abuel[ao]|grandma|grandpa|nan|t[ií]a|auntie?|uncle|prim[oa])\s*([,!?.]|$)/i,
+ fam:/(^|[,!?.]\s*|\b(hi|hey|hello|hola|thanks|thank you|gracias|ok|yes|no|love you|te quiero)\s+)(mum|mom|mummy|mam[aá]|dad|pap[aá]|hermanit[oa]|hij[oa]|abuel[ao]|grandma|grandpa|nan|auntie?|uncle)\s*([,!?.]|$)/i,
  work:/\b(meeting|deadline|report|manager|my boss|the boss|project|presentation|stakeholder|the team|standup|shift|rota|kpi|the office|sprint|reuni[o\u00f3]n|informe|jefe|proyecto|la oficina|el equipo)\b/i,
  cli:/\b(invoice|quote|quotation|proposal|contract|pricing|price list|fees?|commission|payment|paid|deposit|transfer|wire|account (opening|number|statement)|your account|onboarding|kyc|compliance|documents?|signature|sign(ed)? the|order|delivery|portfolio|statement|kind regards|best regards|dear (mr|mrs|ms|sir)|please find|attached|our services?|factura|cotizaci[o\u00f3]n|propuesta|contrato|precio|comisi[o\u00f3]n|pago|dep[o\u00f3]sito|transferencia|su cuenta|documentos?|firma|pedido|estimad[oa]|saludos cordiales|adjunto|cartera)\b/i,
  fri:/\b(mate|dude|bro|lads?|pub|beers?|pints?|party|the game|gym|weon|we[oó]n|wn|amig[oa]|cerve[zs]as?|carrete|fiesta)\b/i
 };
+/* Affection alone (hearts, "love you", "te quiero") is common between friends and family, so it does not count as romance.
+   Romance needs wording that is rarely used outside a couple, and it has to come from both people. */
+var STRONG=/\b(te amo|my love|mi amor|mi vida|amorcito|babe|bae|boyfriend|girlfriend|mi novi[oa]|polol[oa]|pololeando|sexy|cuddl\w+|kiss you|kissing you|besarte|good (morning|night),? (beautiful|handsome|gorgeous|my love|love)|buen(os)? d[ií]as? (mi )?amor|buenas noches (mi )?amor|our anniversary|date night|i want you|miss you so much|can'?t wait to see you|sleep well|sweet dreams|i love you)\b/i;
+var BUDDY=/\b(mate|dude|bro|bruh|buddy|pal|amig[oa]s?|we[oó]n|wn|compadre|comadre|hermano|sis|girlie?|hun|queen|bestie|lads?)\b/i;
+var PARENT=/(?:\b(my|your|his|her|their|mi|tu|su)\s+)?\b(mum|mom|mummy|mam[aá]|dad|pap[aá]|los pap[aá]s|grandma|grandpa|abuel[ao]|la abuela|el abuelo)\b/gi;
 function guessType(D){
-  var c={rom:0,mar:0,fam:0,work:0,cli:0,fri:0},n=0,k;
-  D.msgs.forEach(function(m){if(isMedia(m.text)||isCall(m.text)){return;}n++;for(var kk in TRX){if(TRX[kk].test(m.text)){c[kk]++;}}});
+  var c={mar:0,fam:0,work:0,cli:0},n=0,k,st=[0,0],pn=[0,0],buddy=0,shared=0,owned=0;
+  D.msgs.forEach(function(m){if(isMedia(m.text)||isCall(m.text)){return;}n++;var p=D.full.indexOf(m.who);
+    for(var kk in c){if(TRX[kk].test(m.text)){c[kk]++;}}
+    if(p>=0){pn[p]++;if(STRONG.test(m.text)){st[p]++;}}
+    if(BUDDY.test(m.text)){buddy++;}
+    var x;PARENT.lastIndex=0;while((x=PARENT.exec(m.text))){if(x[1]){owned++;}else{shared++;}}});
   var r={};for(k in c){r[k]=1000*c[k]/Math.max(1,n);}
-  var nameFam=D.full.some(function(x){return /^(mum|mom|mummy|mam[aá]|dad|pap[aá]|mother|father|abuel|grandma|grandpa|nan|aunt|uncle|t[ií]a |t[ií]o )/i.test(x.trim());});
-  var type="other",conf="low";
-  if(nameFam||(r.fam>=4&&r.fam>r.rom)){type="family";conf=nameFam?"high":"medium";}
-  else if(r.rom>=10){type=r.mar>=3?"married":"romantic";conf=r.rom>=25?"high":"medium";}
-  else if(r.cli>=18&&r.cli>=r.work&&r.rom<4){type="client";conf=r.cli>=40?"high":"medium";}
-  else if(r.work>=18&&r.rom<4){type="work";conf=r.work>=40?"high":"medium";}
-  else if(r.rom>=4){type="romantic";conf="low";}
-  else if(n>=100){type="friend";conf=r.fri>=5?"medium":"low";}
+  var s0=1000*st[0]/Math.max(1,pn[0]),s1=1000*st[1]/Math.max(1,pn[1]),strong=1000*(st[0]+st[1])/Math.max(1,n),bud=1000*buddy/Math.max(1,n),par=1000*shared/Math.max(1,n);
+  r.strong=strong;r.buddy=bud;r.parents=par;
+  var nameFam=D.full.some(function(x){return /^(mum|mom|mummy|mam[aá]|dad|pap[aá]|mother|father|abuel|grandma|grandpa|nan |aunt|uncle|t[ií]a |t[ií]o )/i.test(x.trim());});
+  var mutual=s0>=1.2&&s1>=1.2&&strong>=2,type="other",conf="low";
+  if(nameFam||r.fam>=3||(par>=2&&shared>owned)){type="family";conf=nameFam||r.fam>=6?"high":"medium";}
+  else if(r.mar>=5||(mutual&&r.mar>=3)){type="married";conf=mutual?"high":"medium";}
+  else if(mutual&&!(bud>=3&&bud>strong)){type="romantic";conf=strong>=8?"high":strong>=4?"medium":"low";}
+  else if(r.cli>=18&&r.cli>=r.work){type="client";conf=r.cli>=40?"high":"medium";}
+  else if(r.work>=18){type="work";conf=r.work>=40?"high":"medium";}
+  else if(n>=100){type="friend";conf=bud>=3?"medium":"low";}
   return {type:type,conf:conf,rates:r};
 }
 function silenceOf(D,exportedAt){
@@ -786,7 +797,7 @@ function silenceOf(D,exportedAt){
   var seen={},list=[];D.msgs.forEach(function(m){var k=iso(m.t);if(!seen[k]){seen[k]=1;list.push(new Date(m.t.getFullYear(),m.t.getMonth(),m.t.getDate()).getTime());}});
   var gaps=[];for(var i=1;i<list.length;i++){gaps.push((list[i]-list[i-1])/864e5);}
   var usual=gaps.length?quant(gaps,0.95):7;
-  return days>Math.max(21,5*usual)?{days:days,since:last}:null;
+  return days>=Math.max(5,3*usual)?{days:days,since:last}:null;
 }
 function fmtMin(m){return m==null?"unknown":m<1?"under a minute":m<90?Math.round(m)+" min":r1(m/60)+" hours";}
 function measures(D,ws){
@@ -854,7 +865,7 @@ function activeStory(D,ms,H,imp){
   var A=D.names[0],B=D.names[1],L=TW[D.type]||TW.other,W=D.weeks,ps=[],by={};ms.forEach(function(m){by[m.key]=m;});
   var months=Math.max(1,Math.round(W.length/4.345));
   ps.push("This chat covers about "+months+(months===1?" month":" months")+" of the "+L.noun+" between "+A+" and "+B+". "+by.time.text+" "+by.resp.text);
-  if(D.silent){ps.push("The last message was on "+fmtDate(D.silent.since)+", "+D.silent.days+" days before this file was saved. For the two of you that is an unusually long silence, and it is the first thing to understand about where this stands.");}
+  if(D.silent){ps.push("The last message was on "+fmtDate(D.silent.since)+", "+D.silent.days+" days before the chat was exported. For the two of you that is an unusually long silence, and it is the first thing to understand about where this stands.");}
   var best=ms.filter(function(m){return m.score!=null;}).sort(function(a,b){return b.score-a.score;});
   if(best.length){ps.push("Overall it reads as "+H.word.toLowerCase()+" ("+H.score+" out of 100). The strongest part is "+best[0].label.toLowerCase()+": "+best[0].text.charAt(0).toLowerCase()+best[0].text.slice(1)+(best.length>1?" The weakest is "+best[best.length-1].label.toLowerCase()+": "+best[best.length-1].text.charAt(0).toLowerCase()+best[best.length-1].text.slice(1):""));}
   ps.push(imp.todo.length?"The clearest thing to work on: "+lowt(D,imp.todo[0].t)+".":"Nothing in the numbers stands out as a problem.");
@@ -885,7 +896,7 @@ function renderActive(D){
   var H=health(D,ms),imp=improvements(D,ms),L=TW[D.type]||TW.other,by={};ms.forEach(function(m){by[m.key]=m;});
   D.ms=ms;D.health=H;D.imp=imp;
   var t=$("tiles");t.replaceChildren();
-  if(D.silent){t.appendChild(tile("Last message",fmtDate(D.silent.since),D.silent.days+" days of silence by the time this file was saved. That is the main thing to notice."));}
+  if(D.silent){t.appendChild(tile("Last message",fmtDate(D.silent.since),D.silent.days+" days of silence by the time this chat was exported. That is the main thing to notice."));}
   t.appendChild(tile("How it looks",H.word,H.score==null?"":"Overall "+H.score+" out of 100, from the measures below."));
   t.appendChild(tile("In touch",r1(by.time.v)+" days a week","Over the last six months of the chat."));
   t.appendChild(tile("Typical reply",fmtMin(by.resp.v[0])+" / "+fmtMin(by.resp.v[1]),D.names[0]+" first, then "+D.names[1]+"."));
@@ -1218,7 +1229,9 @@ async function writeReport(){
 
 /* ---------- loading a file ---------- */
 function setStatus(t,err){var s=$("status");s.textContent=t;s.className=err?"err":"";}
+var lastZipDate=null;
 async function readFile(f){
+  lastZipDate=null;
   var isZip=/\.zip$/i.test(f.name||"")||/zip/i.test(f.type||"");
   if(!isZip){try{var hd=new Uint8Array(await f.slice(0,2).arrayBuffer());isZip=hd[0]===0x50&&hd[1]===0x4B;}catch(e){}}
   if(isZip){
@@ -1226,6 +1239,7 @@ async function readFile(f){
     var zip=await window.JSZip.loadAsync(f),entry=null;
     zip.forEach(function(path,e){if(!e.dir&&/\.txt$/i.test(path)&&(!entry||/_chat\.txt$/i.test(path))){entry=e;}});
     if(!entry){throw new Error("No .txt chat file was found inside that zip.");}
+    if(entry.date&&!isNaN(entry.date)){lastZipDate=entry.date.getTime();}
     return entry.async("string");
   }
   return f.text();
@@ -1294,7 +1308,7 @@ async function load(f,pasted){
     setStatus(pasted?"Reading the pasted text ...":"Reading "+f.name+" ...");
     var text=pasted!=null?pasted:await readFile(f),msgs=parseChat(text);
     if(msgs.length<(pasted!=null?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted!=null?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is text from a WhatsApp chat.");}
-    chosenType=null;aiType=null;lastExport=f&&f.lastModified?f.lastModified:null;lastMsgs=msgs;show(msgs,guessMe(msgs,f?f.name:null));classifyAI(current);
+    chosenType=null;aiType=null;lastExport=pasted!=null?Date.now():(lastZipDate||(f&&f.lastModified)||null);lastMsgs=msgs;show(msgs,guessMe(msgs,f?f.name:null));classifyAI(current);
     if(window.innerWidth<=820){$("drop").scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
   }catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);}
 }
