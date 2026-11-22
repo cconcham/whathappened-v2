@@ -17,6 +17,7 @@
                                 chat completions address to use another provider.
      PRO_CODES         secret   optional. Access codes, comma separated. A signed in user who enters one becomes Pro.
      PRO_EMAILS        text     optional. Emails that are always Pro, comma separated (for you and testers).
+     ADMIN_EMAILS      text     optional. Emails that can read the feedback inbox. Default: the first of PRO_EMAILS.
      WHY_MONTHLY_CAP   text     optional. Deep readings allowed per account per month. Default 30.
      CODE_DAILY_CAP    text     optional. Deep readings allowed per access code per day (friends links). Default 40.
 
@@ -118,7 +119,11 @@ async function verifyGoogle(idToken, clientId) {
 function planOf(env, rec) {
   return rec.plan === "pro" || list(env.PRO_EMAILS).map((s) => s.toLowerCase()).includes(rec.email) ? "pro" : "free";
 }
-function publicUser(env, rec) { return { name: rec.name, email: rec.email, plan: planOf(env, rec) }; }
+function isAdmin(env, rec) {
+  const a = list(env.ADMIN_EMAILS).length ? list(env.ADMIN_EMAILS) : list(env.PRO_EMAILS).slice(0, 1);
+  return !!rec && a.map((s) => s.toLowerCase()).includes(rec.email);
+}
+function publicUser(env, rec) { const u = { name: rec.name, email: rec.email, plan: planOf(env, rec) }; if (isAdmin(env, rec)) u.admin = true; return u; }
 const TYPES = ["romantic", "married", "family", "friend", "client", "work", "other"];
 const STATES = ["active", "silent", "faded", "ended"];
 function str(v, n) { return v == null ? null : String(v).slice(0, n); }
@@ -186,6 +191,25 @@ export default {
       };
       await db.put("f:" + rec.at + ":" + Math.random().toString(36).slice(2, 8), JSON.stringify(rec));
       return json({ ok: true });
+    }
+
+    /* ----- feedback inbox, for the owner only ----- */
+    if (kind === "feedback_list") {
+      if (!db || !env.SESSION_SECRET) return json({ error: "accounts not configured" }, 500);
+      const who = await session();
+      if (!who) return json({ error: "signed out" }, 401);
+      if (!isAdmin(env, who)) return json({ error: "not allowed" }, 403);
+      let keys = [], cursor;
+      for (let i = 0; i < 5; i++) {
+        const l = await db.list({ prefix: "f:", cursor });
+        keys = keys.concat(l.keys.map((k) => k.name));
+        if (l.list_complete) break;
+        cursor = l.cursor;
+      }
+      keys.sort();
+      const offset = Math.max(0, num(body.offset) || 0), end = keys.length - offset, page = keys.slice(Math.max(0, end - 30), Math.max(0, end)).reverse();
+      const items = (await Promise.all(page.map((k) => db.get(k)))).map((v) => { try { return JSON.parse(v); } catch { return null; } }).filter(Boolean);
+      return json({ total: keys.length, items, more: end - 30 > 0 });
     }
 
     /* ----- accounts ----- */

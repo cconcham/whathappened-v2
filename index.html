@@ -101,6 +101,11 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 .fbrow button{font:600 15px var(--body);min-width:48px;min-height:44px;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--ink) 22%,transparent);background:#fff;color:var(--ink);cursor:pointer;padding:8px 16px}
 .fbrow button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 footer .linkbtn{display:inline;padding:0 0 0 6px;min-height:0}
+
+.zoombox.inboxbox{max-width:640px;max-height:86vh;overflow:auto}
+.fbitem{border-top:1px solid var(--line);padding:12px 0}
+.fbitem p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.fbitem .small{font-family:var(--mono);font-size:12px}
 footer .footlink{color:var(--muted);font-weight:600;text-underline-offset:3px;padding-left:10px;white-space:nowrap}
 .nudge{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding:14px 18px;border-radius:18px;background:color-mix(in srgb,var(--a) 8%,#fff);border:1px solid color-mix(in srgb,var(--a) 22%,transparent)}
 .nudge[hidden]{display:none}
@@ -424,7 +429,7 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 <header class="top">
   <div class="mark"><svg class="logo" viewBox="0 0 44 40" aria-hidden="true"><path d="M11 3h14a9 9 0 0 1 9 9v5a9 9 0 0 1-9 9H14l-7 6 1.6-7.4A9 9 0 0 1 2 17v-5a9 9 0 0 1 9-9z" fill="#FF8A4C"/><path d="M22 14h11a9 9 0 0 1 9 9v3a9 9 0 0 1-5.6 8.3L38 40l-7-5h-9a9 9 0 0 1-9-9v-3a9 9 0 0 1 9-9z" fill="#FF6FAE" stroke="#fff" stroke-width="2.5"/></svg>WhatHappened</div>
   <div class="topright" id="topRight"><select id="langSel" class="langsel" aria-label="Language"><option value="en">EN</option><option value="es">ES</option><option value="pt">PT</option><option value="fr">FR</option><option value="de">DE</option><option value="it">IT</option></select><a href="#drop">Add your chat</a><span id="acctChip" hidden><button class="acctbtn" id="acctBtn" type="button" aria-haspopup="true">Sign in</button></span>
-    <div class="acctmenu" id="acctMenu" hidden><p class="small muted" id="acctWho"></p><button class="linkbtn" id="acctUp" type="button">Unlock the deep reading</button><button class="linkbtn" id="acctOut" type="button">Sign out</button><button class="linkbtn" id="acctDel" type="button">Delete my account</button></div>
+    <div class="acctmenu" id="acctMenu" hidden><p class="small muted" id="acctWho"></p><button class="linkbtn" id="acctUp" type="button">Unlock the deep reading</button><button class="linkbtn" id="acctInbox" type="button" hidden>Feedback received</button><button class="linkbtn" id="acctOut" type="button">Sign out</button><button class="linkbtn" id="acctDel" type="button">Delete my account</button></div>
   </div>
 </header>
 
@@ -595,6 +600,16 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 <footer>WhatHappened is a prototype. It is not counselling or advice. If a breakup is weighing on you heavily, talking to someone you trust or a professional will help more than a chart. <button class="linkbtn" id="fbOpen" type="button">Give feedback</button> <a class="footlink" href="privacy.html">Privacy</a> <a class="footlink" href="terms.html">Terms</a></footer>
 </div>
 
+<div id="inbox" class="zoom" hidden role="dialog" aria-modal="true" aria-labelledby="inboxTitle">
+  <div class="zoombox acctbox inboxbox">
+    <button id="inboxClose" class="zoomx" type="button">Close</button>
+    <p class="eyebrow">Only you see this</p>
+    <h2 id="inboxTitle">Feedback received</h2>
+    <p class="small muted" id="inboxSum"></p>
+    <div id="inboxList"></div>
+    <button class="linkbtn" id="inboxMore" type="button" hidden>Show older</button>
+  </div>
+</div>
 <div id="fb" class="zoom" hidden role="dialog" aria-modal="true" aria-labelledby="fbTitle">
   <div class="zoombox acctbox">
     <button id="fbClose" class="zoomx" type="button">Close</button>
@@ -2191,7 +2206,7 @@ function toggleMenu(){
   if(!signedIn()){openAcct("menu");return;}
   var mn=$("acctMenu");mn.hidden=!mn.hidden;
   $("acctWho").textContent=acct.user.name+(acct.user.email?", "+acct.user.email:"")+". "+(isPro()?"Pro.":"Free account.");
-  $("acctUp").hidden=isPro();$("acctDel").textContent="Delete my account";$("acctDel").removeAttribute("data-sure");
+  $("acctUp").hidden=isPro();$("acctInbox").hidden=!(signedIn()&&acct.user&&acct.user.admin);$("acctDel").textContent="Delete my account";$("acctDel").removeAttribute("data-sure");
 }
 function signOut(){acct=null;saveAcct();renderAcct();if(current&&!current.example){try{fillPro(current,!!(window.claude&&window.claude.use));}catch(e){}}}
 async function deleteAcct(){
@@ -2203,6 +2218,26 @@ async function deleteAcct(){
 $("acctBtn").addEventListener("click",toggleMenu);
 $("acctClose").addEventListener("click",function(){acctNext=null;closeAcct();});
 $("acctOut").addEventListener("click",signOut);
+var inboxOff=0;
+async function loadInbox(reset){
+  if(reset){inboxOff=0;$("inboxList").replaceChildren();}
+  $("inboxSum").textContent="Loading ...";$("inboxMore").hidden=true;
+  try{
+    var r=await api({kind:"feedback_list",token:acct.token,offset:inboxOff});
+    $("inboxSum").textContent=r.total+(r.total===1?" entry in total, newest first.":" entries in total, newest first.");
+    (r.items||[]).forEach(function(f){
+      var c=f.ctx||{},d=h("div","fbitem"),when=String(f.at||"").slice(0,16).replace("T"," ");
+      d.appendChild(h("div","small muted",when+(f.rating?"  ·  "+f.rating+"/5":"")+(f.right?"  ·  right: "+f.right:"")));
+      d.appendChild(h("div","small muted",[c.type,c.stage,c.lang,c.app,c.n!=null?c.n+" msgs":null,c.friend?"friend link":null,c.account?"signed in":null,c.phone?"phone":null,c.why?"had deep reading":null].filter(Boolean).join(" · ")));
+      if(f.text){d.appendChild(h("p",null,f.text));}
+      $("inboxList").appendChild(d);
+    });
+    inboxOff+=(r.items||[]).length;$("inboxMore").hidden=!r.more;
+  }catch(e){$("inboxSum").textContent="Could not load the feedback just now.";}
+}
+$("acctInbox").addEventListener("click",function(){$("acctMenu").hidden=true;$("inbox").hidden=false;loadInbox(true);});
+$("inboxClose").addEventListener("click",function(){$("inbox").hidden=true;});
+$("inboxMore").addEventListener("click",function(){loadInbox(false);});
 $("acctDel").addEventListener("click",deleteAcct);
 $("acctUp").addEventListener("click",function(){$("acctMenu").hidden=true;openAcct("why");});
 $("acctDemo").addEventListener("click",function(){
@@ -2589,11 +2624,11 @@ var TRT=[
 ["No clear warning.", "Sin aviso claro."],
 ["Looking back, there were small drifts.", "Mirando atrás, hubo pequeños desvíos."],
 ["There is not enough history before the change to tell.", "No hay suficiente historia antes del cambio para saberlo."],
-["warm", "cálido"],
-["distant", "distante"],
-["close", "cercano"],
-["engaged", "implicado"],
-["quiet", "callado"],
+["warm", "calidez"],
+["distant", "distancia"],
+["close", "cercanía"],
+["engaged", "implicación"],
+["quiet", "silencio"],
 ["It changed here", "Aquí cambió"],
 ["Contact dropped here", "Aquí cayó el contacto"],
 ["Warmest together", "Mayor calidez juntos"],
@@ -2786,10 +2821,23 @@ var TRT=[
 ["Nothing in the messages points to this.", "Nada en los mensajes apunta a esto."],
 ["These themes were found by matching words in the messages near the end, not by reading them.", "Estos temas se encontraron por coincidencia de palabras en los mensajes cerca del final, no leyéndolos."],
 ["A word can be used in passing, so read the lines before trusting a score.", "Una palabra puede usarse de pasada, así que lee las líneas antes de confiar en un puntaje."],
-["Your own chat adds affection, curiosity, message length, photos, calls, matching style and the hours you wrote.", "Tu propio chat añade cariño, curiosidad, largo de los mensajes, fotos, llamadas, estilo parecido y las horas en que escribían."]
+["Your own chat adds affection, curiosity, message length, photos, calls, matching style and the hours you wrote.", "Tu propio chat añade cariño, curiosidad, largo de los mensajes, fotos, llamadas, estilo parecido y las horas en que escribían."],
+["Then it slowly faded.", "Después se fue apagando poco a poco."],
+["Warm with each other for 1 month.", "Calidez mutua durante 1 mes."],
+["Close and in touch for 1 month.", "Cercanía y contacto durante 1 mes."],
+["Engaged and responsive for 1 month.", "Implicación y respuestas atentas durante 1 mes."],
+["In steady contact for 1 month.", "Contacto constante durante 1 mes."],
+["very warm", "mucha calidez"],
+["cooler", "menos calidez"],
+["very close", "mucha cercanía"],
+["less close", "menos cercanía"],
+["very engaged", "mucha implicación"],
+["less engaged", "menos implicación"],
+["Hearts and laughter", "Corazones y risas"]
 ];
 /* Sentences with names, dates or numbers inside. $1, $2 ... are kept as they are. */
 var TRR=[
+["^Week of (.+?): (.+?) (very warm|warm|cooler|distant|very close|close|less close|very engaged|engaged|less engaged|quiet), (.+?) (very warm|warm|cooler|distant|very close|close|less close|very engaged|engaged|less engaged|quiet)\\.$", "Semana del $1: $2 ⟦$3⟧, $4 ⟦$5⟧."],
 ["^What stopped working with (.+)\\?$","¿Qué dejó de funcionar con $1?","O que deixou de funcionar com $1?","Qu'est-ce qui a cessé de fonctionner avec $1 ?","Was hat mit $1 nicht mehr funktioniert?","Cosa ha smesso di funzionare con $1?"],
 ["^What came between you and (.+)\\?$","¿Qué se interpuso entre tú y $1?","O que se meteu entre você e $1?","Qu'est-ce qui s'est mis entre vous et $1 ?","Was ist zwischen dich und $1 gekommen?","Cosa si è messo tra te e $1?"],
 ["^Why did contact with (.+) drop\\?$","¿Por qué cayó el contacto con $1?","Por que o contato com $1 caiu?","Pourquoi le contact avec $1 a-t-il chuté ?","Warum ist der Kontakt zu $1 abgebrochen?","Perché il contatto con $1 è calato?"],
@@ -2966,10 +3014,13 @@ var TRR=[
 ["^(?:Only )?(\\d+) messages were found\\.$", "Se encontraron $1 mensajes."],
 ["^This chat is mostly in (.+)\\.$", "Este chat está sobre todo en ⟦$1⟧."],
 ["^This Telegram export is a (.+)\\.$", "Esta exportación de Telegram es un $1."],
-["^(.+) \\(you\\)$", "$1 (tú)"]
+["^(.+) \\(you\\)$", "$1 (tú)"],
+["^Then (.+?) pulled away\\.$", "Después $1 se alejó."],
+["^Then (.+?) went quiet\\.$", "Después $1 dejó de escribir."],
+["^Hearts or laughter in ([\\d.,:]+)% of (.+?)'s messages and ([\\d.,:]+)% of (.+?)'s\\.$", "Corazones o risas en el $1% de los mensajes de $2 y el $3% de los de $4."]
 ];
 var TRMON={es:["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],pt:["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"],fr:["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."],de:["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],it:["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"]};
-var TRX_=null,TRRX_=null;
+var TRX_=null,TRRX_=null,TRYOU={es:"tú",pt:"você",fr:"vous",de:"du",it:"tu"};
 function trBuild(){
   var k=UI_LANGS.indexOf(UI_LANG);TRX_={};TRRX_=[];if(k<1){return;}
   TRT.forEach(function(r){if(r[k]){TRX_[r[0]]=r[k];}});
@@ -3009,6 +3060,7 @@ function trText(s){
   var mon=TRMON[UI_LANG];
   if(mon){out=out.replace(/\b(\d{1,2} )?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})\b/g,function(a,d,mo,y){return (d||"")+mon[MON.indexOf(mo)]+" "+y;});}
   if(mon&&/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2}$/.test(out)){out=mon[MON.indexOf(out.slice(0,3))]+out.slice(3);}
+  var you=TRYOU[UI_LANG];if(you&&out.indexOf("(you)")>=0){out=out.replace(/\(you\)/g,"("+you+")");}
   return out===core?s:m[1]+out+m[3];
 }
 var trBusy=false;
