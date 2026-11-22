@@ -464,13 +464,13 @@ body.is-phone .pastewrap{display:flex}
     </div>
   </div>
   <div class="threads">
-  <p class="eyebrow">The warmth between you</p>
+  <p class="eyebrow" id="heroEyebrow">The warmth between you</p>
   <p class="say" id="say"></p>
   <div class="leg" id="heroLegend"></div>
-  <svg id="threads" viewBox="0 0 600 320" role="img" aria-label="How warm each person was in the chat over time, one line per person, with the closest moment, the first sign and the week it changed marked"></svg>
+  <svg id="threads" viewBox="0 0 600 320" role="img" aria-label="How each person showed up in the chat over time, one line per person, with the best stretch and the week it changed marked"></svg>
   <p class="scrub" id="scrub"></p>
   <div class="cap"><span id="capStart">start</span><span id="capEnd">end</span></div>
-  <details class="plain"><summary>What does warmth mean here?</summary><p class="small muted">The shaded band is the stretch of weeks when both of you were warm at the same time, so it is set by whoever was cooler. The lines cross whenever one of you was a little warmer than the other, and a crossing by itself means nothing. Warmth is a score for each person, each week, built from four things in the chat: how much they wrote compared with their usual, how quickly they answered, how often they showed affection or humour, and how often they asked about the other person. It reads behaviour in messages. It cannot read what someone felt.</p></details>
+  <details class="plain"><summary>How is this measured?</summary><p class="small muted" id="howText"></p></details>
 </div>
 </section>
 
@@ -859,8 +859,8 @@ function measures(D,ws){
     {key:"resp",label:"Responsiveness",score:rr.length?Math.round(rr.reduce(function(x,y){return x+y;},0)/rr.length):null,text:"Typical reply: "+A+" "+fmtMin(med[0])+", "+B+" "+fmtMin(med[1])+".",v:med},
     {key:"starts",label:"Who starts",score:bal(fs),text:Math.abs(fs-50)<8?"You start the day's conversation about equally.":(fs>50?A:B)+" starts "+Math.round(Math.max(fs,100-fs))+"% of the days.",v:fs}
   ];
-  if(aff){out.push({key:"warmth",label:"Warmth in writing",score:Math.round(Math.min(100,(0.6*Math.min(aff[0],aff[1])+0.4*Math.max(aff[0],aff[1]))/12*100)),text:"Warm words, hearts or laughter in "+Math.round(aff[0])+"% of "+A+"'s messages and "+Math.round(aff[1])+"% of "+B+"'s.",v:aff});
-    out.push({key:"curiosity",label:"Curiosity",score:Math.round(Math.min(100,(0.6*Math.min(q[0],q[1])+0.4*Math.max(q[0],q[1]))/15*100)),text:"Questions in "+Math.round(q[0])+"% of "+A+"'s messages and "+Math.round(q[1])+"% of "+B+"'s.",v:q});}
+  if(aff){out.push({key:"warmth",label:cp(D).aff,score:Math.round(Math.min(100,(0.6*Math.min(aff[0],aff[1])+0.4*Math.max(aff[0],aff[1]))/12*100)),text:cp(D).affText+" in "+Math.round(aff[0])+"% of "+A+"'s messages and "+Math.round(aff[1])+"% of "+B+"'s.",v:aff});
+    out.push({key:"curiosity",label:cp(D).cur,score:Math.round(Math.min(100,(0.6*Math.min(q[0],q[1])+0.4*Math.max(q[0],q[1]))/15*100)),text:"Questions in "+Math.round(q[0])+"% of "+A+"'s messages and "+Math.round(q[1])+"% of "+B+"'s.",v:q});}
   out.push({key:"time",label:"Time in touch",score:Math.round(Math.min(100,100*act/7)),text:"In touch about "+r1(act)+" days a week.",v:act});
   return out;
 }
@@ -894,7 +894,7 @@ function improvements(D,ms){
   var b=by.balance;if(b&&b.score<55){var hv=b.v>50?A:B,lt=b.v>50?B:A;out.push({t:hv+" carries the conversation",d:b.text+(D.type==="client"?" With a client that often means one side is selling and the other is only receiving.":" It evens out if "+lt+" writes first more often.")});}
   var r=by.resp;if(r&&r.v[0]!=null&&r.v[1]!=null){var hi=Math.max(r.v[0],r.v[1]),lo=Math.max(0.5,Math.min(r.v[0],r.v[1]));if(hi/lo>=2.5&&hi>=10){var slow=r.v[0]>r.v[1]?A:B;out.push({t:slow+" takes much longer to answer",d:r.text+" A gap this size is usually felt by the person waiting."});}else if(r.score!=null&&r.score<45){out.push({t:"Replies are slow on both sides",d:r.text});}}
   var s=by.starts;if(s&&s.score<45){out.push({t:(s.v>50?A:B)+" nearly always starts",d:s.text+" When one person always reaches out first, it can start to feel one sided."});}
-  var wm=by.warmth;if(wm&&D.type!=="work"&&wm.score<35){out.push({t:"Little warmth shows up in writing",d:wm.text+" It may all happen in person or on calls, which a chat cannot see."});}
+  var wm=by.warmth;if(wm&&D.type!=="work"&&D.type!=="client"&&wm.score<35){out.push({t:"Little warmth shows up in writing",d:wm.text+" It may all happen in person or on calls, which a chat cannot see."});}
   var c=by.curiosity;if(c){var qa=c.v[0],qb=c.v[1];if(Math.max(qa,qb)>=6&&Math.min(qa,qb)<Math.max(qa,qb)/2.5){out.push({t:(qa<qb?A:B)+" asks far fewer questions",d:c.text+" Asking about the other person is one of the clearer signs of interest."});}else if(c.score<30){out.push({t:"Few questions either way",d:c.text});}}
   var tm=by.time;if(tm&&tm.v<3){out.push({t:"You are not in touch often",d:tm.text});}
   var ck=by.chase;if(ck&&Math.max(ck.v[0],ck.v[1])>=15){out.push({t:D.names[ck.who]+" is doing the chasing",d:ck.text+" In a client relationship, repeated follow-ups with no answer are usually the earliest warning."});}
@@ -921,13 +921,37 @@ function renderMeasures(ms){
     var bar=h("div","bar"),sp=h("span");sp.style.width=s+"%";bar.appendChild(sp);c.appendChild(bar);
     c.appendChild(h("p","note",m.text));host.appendChild(c);});
 }
+/* ---------- words that fit each kind of relationship ---------- */
+var COPY=(function(){
+  var AFF="Messages with warm words, hearts or laughter, out of every 100.",BIZ="Messages with thanks, friendly words or humour, out of every 100.";
+  var rom={word:"warmth",hi:"warm",mid:"cooler",lo:"distant",best:"Warmest together",eyebrow:"The warmth between you",good:"Warm with each other for",always:"Warm with each other all the way through.",act:["How healthy is it?","What could be better?"],end:["When did it change?","Were there signs?"],drop:"When it changed",dropSay:"It changed in the week of ",here:"It changed here",aff:"Affection",affChart:"Affection and laughter",affSub:AFF,affText:"Warm words, hearts or laughter",cur:"Curiosity",left:"pulled away"};
+  var fam={word:"closeness",hi:"close",mid:"less close",lo:"distant",best:"Closest stretch",eyebrow:"How close you are",good:"Close and in touch for",always:"Close and in touch all the way through.",act:["How close are you?","What could bring you closer?"],end:["Where does it stand?","What changed?"],drop:"When contact dropped",dropSay:"Contact dropped in the week of ",here:"Contact dropped here",aff:"Warmth",affChart:"Warmth and laughter",affSub:AFF,affText:"Warm words, hearts or laughter",cur:"Curiosity",left:"went quiet"};
+  var fri={};for(var k in fam){fri[k]=fam[k];}fri.act=["How strong is the friendship?","What could be better?"];
+  var oth={};for(k in fam){oth[k]=fam[k];}oth.act=["How is it doing?","What could be better?"];
+  var cli={word:"engagement",hi:"engaged",mid:"less engaged",lo:"quiet",best:"Most engaged stretch",eyebrow:"How engaged each of you is",good:"Engaged and responsive for",always:"Engaged all the way through.",act:["How engaged is the client?","What needs attention?"],end:["Where does it stand?","What were the warnings?"],drop:"When they went quiet",dropSay:"Contact dropped in the week of ",here:"Contact dropped here",aff:"Friendly tone",affChart:"Friendly tone and humour",affSub:BIZ,affText:"Thanks, friendly words or humour",cur:"Questions asked",left:"went quiet"};
+  var wrk={};for(k in cli){wrk[k]=cli[k];}wrk.good="In steady contact for";wrk.always="In steady contact all the way through.";wrk.act=["How well do you work together?","What could be smoother?"];wrk.end=["Where does it stand?","What changed?"];wrk.drop="When contact dropped";
+  return {romantic:rom,married:rom,family:fam,friend:fri,client:cli,work:wrk,other:oth};
+})();
+function cp(D){return COPY[D&&D.type]||COPY.romantic;}
+var PLAN=/\b(tonight|tomorrow|saturday|sunday|friday|weekend|let'?s|shall we|wanna|want to (go|come|grab|meet)|free (on|this|next)|meet up|coffee|drinks?|pub|dinner|lunch|quedamos|juntarnos|nos vemos|vamos (a|por)|ma[ñn]ana|s[aá]bado|finde)\b[^?]*\?/i;
+function typeTile(D){
+  var M=D.msgs,A=D.names[0],B=D.names[1];if(!M||!M.length){return null;}
+  var from=new Date(M[M.length-1].t.getTime()-182*864e5),R=M.filter(function(m){return m.t>=from;}),biz=D.type==="client"||D.type==="work";
+  if(biz){var out=0,by=[0,0];R.forEach(function(m){var d=m.t.getDay(),hh=m.t.getHours();if(d===0||d===6||hh<8||hh>=19){out++;by[m.who===D.full[0]?0:1]++;}});
+    var pc=Math.round(100*out/Math.max(1,R.length));return ["Outside working hours",pc+"%",pc<8?"Almost everything is sent in working hours.":"Evenings and weekends. "+(by[0]>=by[1]?A:B)+" sent "+Math.round(100*Math.max(by[0],by[1])/Math.max(1,out))+"% of those."];}
+  if(D.type==="family"){var best=0,a=null,b=null,Y=M.filter(function(m){return m.t>=new Date(M[M.length-1].t.getTime()-365*864e5);});for(var i=1;i<Y.length;i++){var g=(Y[i].t-Y[i-1].t)/864e5;if(g>best){best=g;a=Y[i-1].t;b=Y[i].t;}}
+    return ["Longest silence",Math.round(best)+(Math.round(best)===1?" day":" days"),best>=2&&a?"From "+fmtDate(a)+" to "+fmtDate(b)+", over the last year.":"You were in touch nearly every day over the last year."];}
+  if(D.type==="friend"||D.type==="other"){var pl=[0,0];R.forEach(function(m){if(PLAN.test(m.text)){pl[m.who===D.full[0]?0:1]++;}});var tot=pl[0]+pl[1];
+    return ["Plans suggested",tot?r1(tot/6)+" a month":"Hardly any",tot?(Math.abs(pl[0]-pl[1])<=tot*0.2?"You both suggest meeting about equally.":(pl[0]>pl[1]?A:B)+" suggests most of them ("+Math.round(100*Math.max(pl[0],pl[1])/tot)+"%)."):"Few messages suggest meeting up. It may be arranged elsewhere."];}
+  return null;
+}
 function setHeads(D){
-  var act=D.mode==="active",L=TW[D.type]||TW.other,rom=D.type==="romantic"||D.type==="married";
-  $("h1q").textContent=act?"1. How healthy is it?":"1. When did it change?";
-  $("h2q").textContent=act?"2. What could be better?":"2. Were there signs?";
+  var act=D.mode==="active",L=TW[D.type]||TW.other,rom=D.type==="romantic"||D.type==="married",C=cp(D),q=act?C.act:C.end;
+  $("h1q").textContent="1. "+q[0];
+  $("h2q").textContent="2. "+q[1];
   $("h3q").textContent="3. Why?";
   $("signIntro").textContent=act?"What the chat shows about how the two of you talk lately.":"The last weeks compared with how things usually were between you, counted from the timings in the chat.";
-  $("hReasons").textContent=act?"The measures behind it":rom?"The usual reasons for a "+L.end+", checked against your chat":"How the "+L.noun+" measured up before it changed";
+  $("hReasons").textContent=act?"The measures behind it":rom?"The usual reasons for a "+L.end+", checked against your chat":"How the "+L.noun+" measured up before contact dropped";
   $("reasonIntro").textContent=act||!rom?"Each measure runs from 0 to 100 and comes straight from the timings and words in the chat. Together they make up the overall reading.":"The score is how much evidence for a theme shows up in the messages, from 0 to 100. It is not the chance that it happened. Each theme lists the dated moments behind it so you can judge for yourself.";
 }
 function lowt(D,t){return t.indexOf(D.names[0])===0||t.indexOf(D.names[1])===0?t:t.charAt(0).toLowerCase()+t.slice(1);}
@@ -941,7 +965,8 @@ function renderActive(D){
   t.appendChild(tile("How it looks",H.word,H.score==null?"":"Overall "+H.score+" out of 100, from the measures below."));
   t.appendChild(tile("In touch",r1(by.time.v)+" days a week","Over the last six months of the chat."));
   t.appendChild(tile("Typical reply",fmtMin(by.resp.v[0])+" / "+fmtMin(by.resp.v[1]),D.names[0]+" first, then "+D.names[1]+"."));
-  t.appendChild(tile("Messages read",(D.count[0]+D.count[1]).toLocaleString(),D.names[0]+" "+D.count[0].toLocaleString()+", "+D.names[1]+" "+D.count[1].toLocaleString()));
+  var tt=typeTile(D);
+  if(tt){t.appendChild(tile(tt[0],tt[1],tt[2]));}else{t.appendChild(tile("Messages read",(D.count[0]+D.count[1]).toLocaleString(),D.names[0]+" "+D.count[0].toLocaleString()+", "+D.names[1]+" "+D.count[1].toLocaleString()));}
   var months=Math.max(1,Math.round(W.length/4.345));
   $("say").textContent=D.silent?"No messages since "+fmtDate(D.silent.since)+". Before that, "+H.word.toLowerCase()+".":H.word+" "+L.noun+". "+months+(months===1?" month":" months")+" in the chat, and still talking.";
   $("whenSay").textContent=(D.silent?"You have not written since "+fmtDate(D.silent.since)+". Before the silence it read as "+H.word.toLowerCase()+". ":"It reads as "+H.word.toLowerCase()+(H.score!=null?", "+H.score+" out of 100. ":". "))+by.time.text+" "+by.balance.text;
@@ -1016,7 +1041,7 @@ var EX_REASONS=[
 ];
 
 /* ---------- drawing ---------- */
-function feel(v){return v>=65?"very warm":v>=48?"warm":v>=30?"cooler":"distant";}
+function feel(v,C){C=C||COPY.romantic;return v>=65?"very "+C.hi:v>=48?C.hi:v>=30?C.mid:C.lo;}
 function drawThreads(D){
   var svg=$("threads");svg.replaceChildren();
   var W=600,H=320,m={t:34,r:16,b:20,l:16},n=D.weeks.length;
@@ -1025,10 +1050,12 @@ function drawThreads(D){
   var defs=el("defs",{});
   [0,1].forEach(function(p){var g=el("linearGradient",{id:"wg"+p,x1:0,y1:0,x2:0,y2:1});var s1=el("stop",{offset:"0%"}),s2=el("stop",{offset:"100%"});s1.setAttribute("style","stop-color:var(--"+(p?"b":"a")+");stop-opacity:.34");s2.setAttribute("style","stop-color:var(--"+(p?"b":"a")+");stop-opacity:0");g.appendChild(s1);g.appendChild(s2);defs.appendChild(g);});
   svg.appendChild(defs);
-  svg.appendChild(el("text",{x:m.l,y:16,"class":"ax"},"warm"));svg.appendChild(el("text",{x:m.l,y:H-4,"class":"ax"},"distant"));
+  var C=cp(D);$("heroEyebrow").textContent=C.eyebrow;
+  $("howText").textContent="The shaded band is the stretch of weeks when both of you were most "+C.hi+" at the same time, so it is set by whoever was less so. The lines cross whenever one of you was a little ahead of the other, and a crossing by itself means nothing. "+C.word.charAt(0).toUpperCase()+C.word.slice(1)+" is a score for each person, each week, built from four things in the chat: how much they wrote compared with their usual, how quickly they answered, how often they used "+(C.word==="engagement"?"friendly words or humour":"affection or humour")+", and how often they asked the other person something. It reads behaviour in messages. It cannot read what someone felt.";
+  svg.appendChild(el("text",{x:m.l,y:16,"class":"ax"},C.hi));svg.appendChild(el("text",{x:m.l,y:H-4,"class":"ax"},C.lo));
   [0,1].forEach(function(p){svg.appendChild(el("path",{d:path(p)+" L"+X(n-1)+" "+(H-m.b)+" L"+X(0)+" "+(H-m.b)+" Z",fill:"url(#wg"+p+")"}));});
   function label(i,y,txt){var x=X(i),anchor=x>W*0.72?"end":x<W*0.2?"start":"middle";svg.appendChild(el("text",{x:x+(anchor==="end"?-8:anchor==="start"?8:0),y:y,"text-anchor":anchor},txt));}
-  if(D.change!=null){var cx=X(D.change);svg.appendChild(el("line",{x1:cx,x2:cx,y1:m.t-6,y2:H-m.b,stroke:"var(--ink)","stroke-dasharray":"3 5","stroke-width":1.5,opacity:.55}));label(D.change,m.t-12,"It changed here");}
+  if(D.change!=null){var cx=X(D.change);svg.appendChild(el("line",{x1:cx,x2:cx,y1:m.t-6,y2:H-m.b,stroke:"var(--ink)","stroke-dasharray":"3 5","stroke-width":1.5,opacity:.55}));label(D.change,m.t-12,cp(D).here);}
   [0,1].forEach(function(p){
     var pa=el("path",{d:path(p),fill:"none",stroke:p?"var(--b)":"var(--a)","stroke-width":5,"stroke-linecap":"round"});svg.appendChild(pa);
     try{var len=Math.ceil(pa.getTotalLength());if(len>0){pa.style.strokeDasharray=len;pa.style.setProperty("--len",len);pa.setAttribute("class","draw");}}catch(e){}
@@ -1039,13 +1066,13 @@ function drawThreads(D){
   var b1=Math.min(n-1,b0+win-1),bi=Math.round((b0+b1)/2);
   var band=el("rect",{x:X(b0),y:m.t-6,width:Math.max(4,X(b1)-X(b0)),height:H-m.b-m.t+6,rx:10,fill:"var(--ink)",opacity:.07});
   svg.insertBefore(band,svg.children[1]||null);
-  label(bi,m.t+12,"Warmest together");
-  var bandTxt="Warmest together: "+fmtDate(D.weeks[b0].start)+" to "+fmtDate(D.weeks[b1].start)+". ";
+  label(bi,m.t+12,C.best);
+  var bandTxt=C.best+": "+fmtDate(D.weeks[b0].start)+" to "+fmtDate(D.weeks[b1].start)+". ";
   var early=(D.signals||[]).filter(function(s){return s.lead>0&&s.first!=null;}).sort(function(a,b){return b.lead-a.lead;})[0];
   if(early&&Math.abs(early.first-bi)>3&&(D.change==null||D.change-early.first>2)){var p2=early.p||0,fy=Y(D.weeks[early.first].warm[p2]);svg.appendChild(el("circle",{cx:X(early.first),cy:fy,r:5,fill:"var(--panel)",stroke:p2?"var(--b)":"var(--a)","stroke-width":2.5}));label(early.first,Math.min(H-m.b-6,fy+22),"First sign");}
   var cur=el("line",{y1:m.t-6,y2:H-m.b,stroke:"var(--ink)","stroke-width":1,opacity:0});svg.appendChild(cur);
   var hint=bandTxt+"Slide across the chart to feel any week. Tap it to enlarge.";$("scrub").textContent=hint;
-  svg.onpointermove=function(ev){var r=svg.getBoundingClientRect();if(!r.width){return;}var x=(ev.clientX-r.left)/r.width*W;var i=Math.max(0,Math.min(n-1,Math.round((x-m.l)/(W-m.l-m.r)*(n-1))));cur.setAttribute("x1",X(i));cur.setAttribute("x2",X(i));cur.setAttribute("opacity",.45);var w=D.weeks[i];$("scrub").textContent="Week of "+fmtDate(w.start)+": "+D.names[0]+" "+feel(w.warm[0])+", "+D.names[1]+" "+feel(w.warm[1])+".";};
+  svg.onpointermove=function(ev){var r=svg.getBoundingClientRect();if(!r.width){return;}var x=(ev.clientX-r.left)/r.width*W;var i=Math.max(0,Math.min(n-1,Math.round((x-m.l)/(W-m.l-m.r)*(n-1))));cur.setAttribute("x1",X(i));cur.setAttribute("x2",X(i));cur.setAttribute("opacity",.45);var w=D.weeks[i];$("scrub").textContent="Week of "+fmtDate(w.start)+": "+D.names[0]+" "+feel(w.warm[0],C)+", "+D.names[1]+" "+feel(w.warm[1],C)+".";};
   svg.onpointerleave=function(){cur.setAttribute("opacity",0);$("scrub").textContent=hint;};
   $("capStart").textContent=fmtDate(D.weeks[0].start);$("capEnd").textContent=fmtDate(D.weeks[n-1].start);
   var lg=$("heroLegend");lg.replaceChildren();[0,1].forEach(function(p){var sp=h("span");var b=h("b");b.style.background=p?"var(--b)":"var(--a)";sp.appendChild(b);sp.appendChild(document.createTextNode((D.label||D.names)[p]));lg.appendChild(sp);});
@@ -1053,10 +1080,10 @@ function drawThreads(D){
   if(D.change!=null){
     var months=Math.max(1,Math.round(D.change/4.345)),bw=[0,1].map(function(p){var a=D.weeks.slice(Math.max(0,D.change-12),D.change),b=D.weeks.slice(D.change);var f=function(x){return x.reduce(function(s,w){return s+w.warm[p];},0)/Math.max(1,x.length);};return f(a)-f(b);});
     var who=bw[0]>bw[1]*1.4?0:bw[1]>bw[0]*1.4?1:-1;
-    say=(D.type==="romantic"||D.type==="married"||!D.type?"Warm with each other for ":"In steady contact for ")+months+(months===1?" month":" months")+". Then "+(D.gradual?"it slowly faded":who>=0?D.names[who]+" pulled away":(D.signals||[]).some(function(x){return x.lead>0;})?"you both went quiet":"it went quiet in a single week")+".";
-  }else{say="Warm with each other all the way through. The chat shows no clear break.";}
+    say=C.good+" "+months+(months===1?" month":" months")+". Then "+(D.gradual?"it slowly faded":who>=0?D.names[who]+" "+C.left:(D.signals||[]).some(function(x){return x.lead>0;})?"you both went quiet":"it went quiet in a single week")+".";
+  }else{say=C.always+" The chat shows no clear break.";}
   $("say").textContent=say;
-  svg.__info={W:W,l:m.l,r:m.r,n:n,top:m.t-6,bottom:H-m.b,read:function(i){var w=D.weeks[i];return "Week of "+fmtDate(w.start)+": "+D.names[0]+" "+feel(w.warm[0])+", "+D.names[1]+" "+feel(w.warm[1])+".";}};
+  svg.__info={W:W,l:m.l,r:m.r,n:n,top:m.t-6,bottom:H-m.b,read:function(i){var w=D.weeks[i];return "Week of "+fmtDate(w.start)+": "+D.names[0]+" "+feel(w.warm[0],C)+", "+D.names[1]+" "+feel(w.warm[1],C)+".";}};
 }
 function sm(arr,i){if(arr[i]==null){return null;}var a=[];for(var k=Math.max(0,i-1);k<=Math.min(arr.length-1,i+1);k++){if(arr[k]!=null){a.push(arr[k]);}}return a.reduce(function(x,y){return x+y;},0)/a.length;}
 function drawLines(host,D,series,opts){
@@ -1112,8 +1139,8 @@ function renderMore(D){
   }
   add("Who carried the conversation","Share of all messages sent by "+L[0]+". The dotted line at 50 is an even split.",[{get:function(w){return w.tot>=6?100*w.n[0]/w.tot:null;},color:A}],{max:100,ref:50,smooth:1},one(function(ws){return 100*S(ws,function(w){return w.n[0];})/S(ws,function(w){return w.tot;});},"%"));
   add("Who started the day","Days each week when each of you wrote first.",two(function(w,p){return w.first[p];}),{max:7,smooth:1},both(function(ws,p){return S(ws,function(w){return w.first[p];})/ws.length;}," days a week"));
-  add("Affection and laughter","Messages with warm words, hearts or laughter, out of every 100.",two(function(w,p){return w.aff&&w.n[p]>=5?100*w.aff[p]/w.n[p]:null;}),{smooth:1},both(function(ws,p){return 100*S(ws,function(w){return w.aff[p];})/S(ws,function(w){return w.n[p];});}));
-  add("Curiosity","Messages with a question in them, out of every 100.",two(function(w,p){return w.q&&w.n[p]>=5?100*w.q[p]/w.n[p]:null;}),{smooth:1},both(function(ws,p){return 100*S(ws,function(w){return w.q[p];})/S(ws,function(w){return w.n[p];});}));
+  add(cp(D).affChart,cp(D).affSub,two(function(w,p){return w.aff&&w.n[p]>=5?100*w.aff[p]/w.n[p]:null;}),{smooth:1},both(function(ws,p){return 100*S(ws,function(w){return w.aff[p];})/S(ws,function(w){return w.n[p];});}));
+  add(cp(D).cur,"Messages with a question in them, out of every 100.",two(function(w,p){return w.q&&w.n[p]>=5?100*w.q[p]/w.n[p]:null;}),{smooth:1},both(function(ws,p){return 100*S(ws,function(w){return w.q[p];})/S(ws,function(w){return w.n[p];});}));
   add("How much each of you wrote","Average number of words in a message.",two(function(w,p){return w.txt&&w.txt[p]>=5?w.words[p]/w.txt[p]:null;}),{smooth:1},both(function(ws,p){return S(ws,function(w){return w.words[p];})/S(ws,function(w){return w.txt[p];});}," words"));
   add("Photos, videos and voice notes","How many each of you sent in a week.",two(function(w,p){return w.media?w.media[p]:null;}),{smooth:1},both(function(ws,p){return S(ws,function(w){return w.media[p];})/ws.length;}," a week"));
   add("Calls","Voice and video calls logged in the chat each week, answered or missed.",[{get:function(w){return w.calls;},color:N,soft:1}],{smooth:1},one(function(ws){return S(ws,function(w){return w.calls;})/ws.length;}," a week"));
@@ -1146,7 +1173,7 @@ function render(D){
   }
   var t=$("tiles");t.replaceChildren();
   if(D.change!=null){
-    t.appendChild(tile("When it changed",(D.gradual?"From around ":"Week of ")+fmtDate(D.weeks[D.change].start),D.gradual?"The conversation thinned out gradually to under half of what it was, and stayed there.":"Message volume fell below 40% of the two months before and did not come back."));
+    t.appendChild(tile(cp(D).drop,(D.gradual?"From around ":"Week of ")+fmtDate(D.weeks[D.change].start),D.gradual?"The conversation thinned out gradually to under half of what it was, and stayed there.":"Message volume fell below 40% of the two months before and did not come back."));
     var early=D.signals.filter(function(s){return s.lead>0;}).sort(function(a,b){return b.lead-a.lead;});
     t.appendChild(tile("Earliest sign",early.length?early[0].lead+(early[0].lead===1?" week before":" weeks before"):"None before the change",early.length?early[0].label+" left its usual range.":"Every signal moved in the same week or later."));
     if(D.slow){t.appendChild(tile("Who slowed down",D.names[D.slow.p],"Typical reply went from "+r1(D.slow.b)+" to "+r1(D.slow.a)+" minutes."));}
@@ -1167,7 +1194,7 @@ function render(D){
   var ws=$("whenSay");
   if(D.change!=null){
     var avg=function(a){return a.length?Math.round(a.reduce(function(x,w){return x+w.tot;},0)/a.length):0;};
-    ws.textContent=(D.gradual?"It faded gradually, from around the week of ":"It changed in the week of ")+fmtDate(D.weeks[D.change].start)+". Before that you exchanged about "+avg(D.weeks.slice(Math.max(0,D.change-8),D.change))+" messages a week. After, about "+avg(D.weeks.slice(D.change))+".";
+    ws.textContent=(D.gradual?"It faded gradually, from around the week of ":cp(D).dropSay)+fmtDate(D.weeks[D.change].start)+". Before that you exchanged about "+avg(D.weeks.slice(Math.max(0,D.change-8),D.change))+" messages a week. After, about "+avg(D.weeks.slice(D.change))+".";
   }else{ws.textContent="No single week stands out. The conversation never dropped and stayed down.";}
   if(D.slow&&!D.example){D.signals.forEach(function(x){if(x.kind==="reply"&&x.p===D.slow.p&&x.first==null){x.first=D.change;x.lead=0;x.value=r1(D.slow.a)+" min";x.pooled=true;}});}
   var sorted=D.signals.slice().sort(function(a,b){return (b.lead==null?-99:b.lead)-(a.lead==null?-99:a.lead);});
@@ -1572,7 +1599,7 @@ var zoomBack=null;
 function openZoom(host){
   var src=host.tagName&&host.tagName.toLowerCase()==="svg"?host:host.querySelector("svg");if(!src){return;}
   var card=host.closest?host.closest(".card,.threads"):null,q=function(sel){var e=card&&card.querySelector(sel);return e?e.textContent:"";};
-  $("zoomTitle").textContent=q("h3")||q(".say");$("zoomSub").textContent=card&&card.classList.contains("threads")?"The warmth between you, week by week.":q("p.small.muted");$("zoomTake").textContent=q(".take");
+  $("zoomTitle").textContent=q("h3")||q(".say");$("zoomSub").textContent=card&&card.classList.contains("threads")?$("heroEyebrow").textContent+", week by week.":q("p.small.muted");$("zoomTake").textContent=q(".take");
   var lg=$("zoomLeg");lg.replaceChildren();
   if(current){var L=current.label||current.names;[0,1].forEach(function(p){var sp=h("span");var b=h("b");b.style.background=p?"var(--b)":"var(--a)";sp.appendChild(b);sp.appendChild(document.createTextNode(L[p]));lg.appendChild(sp);});}
   var cl=src.cloneNode(true);cl.removeAttribute("id");cl.querySelectorAll(".draw").forEach(function(e){e.removeAttribute("class");e.style.strokeDasharray="";});
