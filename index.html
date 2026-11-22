@@ -333,6 +333,15 @@ body.is-phone .pastewrap{display:flex}
 .checks .no{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted)}
 .checks .d{grid-column:2;color:var(--muted);font-size:13px}
 .checks q{grid-column:2;font-size:13px;color:var(--ink);quotes:"\201C" "\201D"}
+[hidden]{display:none!important}
+.pro{gap:12px;border:1.5px solid color-mix(in srgb,var(--warn) 45%,transparent)}
+.prolist li{padding-left:22px;position:relative}
+.prolist li::before{content:"";position:absolute;left:4px;top:.55em;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--warn),var(--b))}
+.prorow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.prorow input{font:600 16px var(--body);padding:12px 16px;border-radius:999px;border:1.5px solid var(--edge);background:#fff;color:var(--ink);min-width:0;flex:1 1 160px;max-width:240px}
+.deep .lead{font-weight:700;font-size:20px;line-height:1.3}
+.deep h3{margin-top:14px}
+#deepOut{display:flex;flex-direction:column;gap:10px}
 /* ---------- phones ---------- */
 #threads{touch-action:pan-y}
 .linkbtn{min-height:44px}
@@ -477,11 +486,17 @@ body.is-phone .pastewrap{display:flex}
 </section>
 
 <section class="sec" id="story">
-    <h2 id="h3q">3. Why?</h2>
-  <p class="muted" id="storyHint">An example of the written account you get for your own chat.</p>
-  <button class="btn alt" id="write" type="button" hidden>Write my report</button>
-  <p class="small muted" id="writeNote" hidden>Pressing this sends an extract of the chat to an AI service: the figures above and up to about 600 messages. Nothing is sent before you press it.</p>
-  <div class="card"><p class="story" id="storyText"></p></div>
+  <h2 id="h3q">3. Why?</h2>
+  <p class="muted" id="storyHint">An example of the deep reading you can unlock for your own chat.</p>
+  <div class="card pro" id="proCard" hidden>
+    <span class="pill early">Deep reading</span>
+    <h3 id="proTitle">What actually happened, read from the conversation itself</h3>
+    <p class="small muted" id="proLead"></p>
+    <ul class="plainlist prolist" id="proList"></ul>
+    <div class="prorow"><input id="proCode" type="text" placeholder="Access code" autocomplete="off" autocapitalize="characters" aria-label="Access code" hidden><button class="btn" id="write" type="button">Unlock the deep reading</button></div>
+    <p class="small muted" id="writeNote"></p>
+  </div>
+  <div class="card deep" id="storyCard"><p class="story lead" id="storyText"></p><div id="deepOut"></div></div>
 </section>
 
 <section class="sec" id="reasons">
@@ -1172,59 +1187,125 @@ function renderReasons(list,example){
 /* ---------- the written report ---------- */
 var current=null;
 function fmtMsg(m){var t=m.text.replace(/\s+/g," ");if(isMedia(t)){t=/sticker|\.webp/i.test(t)?"[sticker]":"[media]";}if(isCall(t)){t="[call]";}return iso(m.t)+" "+String(m.t.getHours()).padStart(2,"0")+":"+String(m.t.getMinutes()).padStart(2,"0")+" "+m.who+": "+t.slice(0,170);}
-function buildExtract(D){
-  var M=D.msgs,pick={},i,TENSE=/sorry|upset|angry|annoy|don'?t want|need space|break|we need to talk|tired of|always|never|whatever|busy|cancel|feelings|think about us|not happy|hurt|fight|argu/i;
+function parseJson(txt){var a=txt.indexOf("{"),b=txt.lastIndexOf("}");if(a<0||b<0){throw new Error("no json");}return JSON.parse(txt.slice(a,b+1));}
+/* ---------- the deep reading (paid): every chart plus a wide, chosen slice of the conversation ---------- */
+function deepPick(D){
+  if(D._deep){return D._deep;}
+  var M=D.msgs,pick={},i,TENSE=/sorry|upset|angry|annoy|don'?t want|need space|break|we need to talk|tired of|always|never|whatever|busy|cancel|feelings|think about us|not happy|hurt|fight|argu|perd[oó]n|molest|enoj|pelea|tenemos que hablar|cansad|no quiero|necesito tiempo|triste|llor/i;
   function take(a,b){for(var k=Math.max(0,a);k<Math.min(M.length,b);k++){pick[k]=1;}}
   var cut=M.length;
-  if(D.change!=null){var cw=D.weeks[D.change].start;for(i=0;i<M.length;i++){if(M[i].t>=cw){cut=i;break;}}}
-  take(cut-220,cut+110);take(M.length-60,M.length);take(0,25);
+  if(D.change!=null){var cw=D.weeks[D.change].start;for(i=0;i<M.length;i++){if(M[i].t>=cw){cut=i;break;}}take(cut-500,cut+250);}
+  take(M.length-(D.change!=null?120:320),M.length);take(0,40);
   var byDay={};M.forEach(function(m,k){if(TENSE.test(m.text)){var d=iso(m.t);(byDay[d]=byDay[d]||[]).push(k);}});
-  Object.keys(byDay).sort(function(a,b){return byDay[b].length-byDay[a].length;}).slice(0,8).forEach(function(d){var ks=byDay[d];take(ks[0]-6,ks[ks.length-1]+8);});
-  var stepBg=Math.max(1,Math.floor(M.length/120));for(i=0;i<M.length;i+=stepBg){pick[i]=1;}
-  var keys=Object.keys(pick).map(Number).sort(function(a,b){return a-b;}),out=[],last=-2,chars=0;
-  for(i=0;i<keys.length&&chars<52000;i++){if(keys[i]!==last+1&&out.length){out.push("...");}var s=fmtMsg(M[keys[i]]);out.push(s);chars+=s.length;last=keys[i];}
-  return out.join("\n");
+  Object.keys(byDay).sort(function(a,b){return byDay[b].length-byDay[a].length;}).slice(0,15).forEach(function(d){var ks=byDay[d];take(ks[0]-10,ks[ks.length-1]+12);});
+  var longs=[];M.forEach(function(m,k){if(m.text.length>220&&!isMedia(m.text)){longs.push(k);}});
+  longs.sort(function(a,b){return M[b].text.length-M[a].text.length;}).slice(0,80).forEach(function(k){take(k-2,k+3);});
+  var stepBg=Math.max(1,Math.floor(M.length/250));for(i=0;i<M.length;i+=stepBg){pick[i]=1;}
+  var keys=Object.keys(pick).map(Number).sort(function(a,b){return a-b;}),out=[],last=-2,chars=0,n=0;
+  for(i=0;i<keys.length&&chars<150000;i++){if(keys[i]!==last+1&&out.length){out.push("...");}var m=M[keys[i]],tx=m.text.replace(/\s+/g," ");if(isMedia(tx)){tx="[media]";}else if(isCall(tx)){tx="[call]";}else if(tx.length>400){tx=tx.slice(0,400)+"…";}
+    var s=iso(m.t)+" "+String(m.t.getHours()).padStart(2,"0")+":"+String(m.t.getMinutes()).padStart(2,"0")+" "+(m.who===D.full[0]?D.names[0]:D.names[1])+": "+tx;out.push(s);chars+=s.length;last=keys[i];n++;}
+  D._deep={text:out.join("\n"),count:n};return D._deep;
 }
-function buildPrompt(D){
-  var facts=["People: "+D.names[0]+" and "+D.names[1]+".","Chat runs from "+fmtDate(D.weeks[0].start)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+", "+D.msgs.length+" messages.",
-    "Kind of relationship (best guess or chosen by the user): "+(TYPE_LABEL[D.type]||"unknown")+".",D.mode==="active"?"State: still in regular contact"+(D.silent?", but silent for "+D.silent.days+" days at export.":"."):"State: contact dropped and stayed low.",
-    D.change!=null?"Measured change: message volume fell sharply and stayed low from the week of "+fmtDate(D.weeks[D.change].start)+".":"No sharp, lasting drop in volume was measured."];
-  D.signals.forEach(function(s){facts.push("Signal: "+s.label+", usual range "+s.range+", "+(s.first==null?"stayed in range":"first outside it in the week of "+fmtDate(D.weeks[s.first].start)+" ("+s.value+")")+".");});
-  return "You are helping one person understand the end of their own relationship from their WhatsApp chat. Be honest, specific and kind. Do not take sides. Do not diagnose anyone. Base every claim on the facts and messages below, and say plainly when the chat does not show something.\n\n"+
-  "MEASURED FACTS\n"+facts.join("\n")+"\n\nMESSAGE EXTRACT (a selection, '...' marks gaps)\n"+buildExtract(D)+"\n\n"+
+function deepFacts(D){
+  var A=D.names[0],B=D.names[1],W=D.weeks,f=[],rom=D.type==="romantic"||D.type==="married";
+  f.push("People: "+A+(D.me===0?" (the reader)":"")+" and "+B+".");
+  f.push("Chat runs from "+fmtDate(W[0].start)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+", "+D.msgs.length+" messages: "+A+" "+D.count[0]+", "+B+" "+D.count[1]+".");
+  f.push("Kind of relationship (best guess, or chosen by the reader): "+(TYPE_LABEL[D.type]||"unknown")+".");
+  f.push(D.mode==="active"?"State: still in regular contact"+(D.silent?", but silent for "+D.silent.days+" days when exported (last message "+fmtDate(D.silent.since)+").":"."):"State: contact "+(D.gradual?"faded gradually from around":"dropped sharply in")+" the week of "+fmtDate(W[D.change].start)+" and stayed low.");
+  if(D.slow){f.push(D.names[D.slow.p]+"'s typical reply went from "+fmtMin(D.slow.b)+" to "+fmtMin(D.slow.a)+" after the change.");}
+  D.signals.forEach(function(s){f.push("Signal: "+s.label+", usual range "+s.range+", "+(s.first==null?"stayed in range":"first outside it in the week of "+fmtDate(W[s.first].start)+" ("+s.value+")")+".");});
+  (D.soft||[]).forEach(function(x){f.push("Small drift in the two months before: "+x.t+". "+x.d);});
+  (D.ms||[]).forEach(function(m){if(m.score!=null&&!isNaN(m.score)){f.push("Measure, "+m.label+" ("+m.score+"/100): "+m.text);}});
+  if(D.health&&D.health.score!=null){f.push("Overall reading: "+D.health.word+", "+D.health.score+"/100.");}
+  if(rom&&D.mode==="ended"){
+    (D.themes||[]).forEach(function(t){f.push("Keyword count, "+t.reason+": "+t.note);});
+    if(D.se){D.se.signals.forEach(function(s){f.push("Third person check, "+s.label+": "+(s.found?"FOUND. ":"not found. ")+s.detail);});}
+  }
+  var rows=[],cur=null;
+  W.forEach(function(w){var k=w.start.getFullYear()+"-"+String(w.start.getMonth()+1).padStart(2,"0");if(!cur||cur.k!==k){cur={k:k,n:[0,0],rep:[[],[]],first:[0,0],act:0,wk:0,aff:[0,0],q:[0,0],calls:0,media:[0,0]};rows.push(cur);}
+    cur.wk++;cur.act+=w.active;cur.calls+=w.calls||0;for(var p=0;p<2;p++){cur.n[p]+=w.n[p];cur.rep[p].push.apply(cur.rep[p],w.rep[p]);cur.first[p]+=w.first[p];cur.aff[p]+=w.aff?w.aff[p]:0;cur.q[p]+=w.q?w.q[p]:0;cur.media[p]+=w.media?w.media[p]:0;}});
+  var tb=["month | msgs "+A+"/"+B+" | typical reply min "+A+"/"+B+" | days first "+A+"/"+B+" | days in touch per week | warm msgs % "+A+"/"+B+" | question msgs % "+A+"/"+B+" | media "+A+"/"+B+" | calls"];
+  rows.forEach(function(r){var md=[median(r.rep[0]),median(r.rep[1])].map(function(v){return v==null?"-":Math.round(v);}),pc=function(a,n){return n?Math.round(100*a/n):0;};
+    tb.push(r.k+" | "+r.n[0]+"/"+r.n[1]+" | "+md[0]+"/"+md[1]+" | "+r.first[0]+"/"+r.first[1]+" | "+r1(r.act/r.wk)+" | "+pc(r.aff[0],r.n[0])+"/"+pc(r.aff[1],r.n[1])+" | "+pc(r.q[0],r.n[0])+"/"+pc(r.q[1],r.n[1])+" | "+r.media[0]+"/"+r.media[1]+" | "+r.calls);});
+  return f.join("\n")+"\n\nMONTH BY MONTH (the data behind every chart)\n"+tb.join("\n");
+}
+function buildDeepPrompt(D){
+  var A=D.names[0],B=D.names[1],L=TW[D.type]||TW.other,rom=D.type==="romantic"||D.type==="married",ended=D.mode==="ended";
+  var chapters=ended?"\"How it was\", \"What changed\", \"The days around "+fmtDate(D.weeks[D.change].start)+"\", \"Were there signs\", \"Why, as far as the conversation shows\"":"\"How it works between you\", \"What is strong\", \"What is uneven, and why\", \"The moments that mattered\""+(D.silent?", \"The silence since "+fmtDate(D.silent.since)+"\"":"");
+  return "You are writing a careful, honest account for one person about their own WhatsApp conversation: the "+L.noun+" between "+A+" and "+B+". They have already seen the charts. They are paying for this because they want to know what actually happened, not a summary of the numbers.\n\n"+
+  "How to work:\n- Use MEASURED FACTS and MONTH BY MONTH for what changed and when.\n- Use MESSAGES for why. Read them closely: what was asked and not answered, what was promised and dropped, who apologised, who stopped making plans, what subjects kept coming back, how the tone moved.\n- Tie every claim to a date and, where you can, to a short real quote. Never invent or alter a quote. If you are not sure a quote is exact, describe it without quotation marks.\n- Do not take sides. Do not diagnose anyone. Do not guess at feelings the messages do not show.\n- Say plainly when the conversation does not show something, including when the real reason is probably off the page (calls, time in person).\n- Plain language, short paragraphs, British spelling, no dashes. Write to the reader as \"you\" only if the facts say who the reader is. Otherwise use the names.\n"+
+  (rom&&ended?"- On a third person: go only as far as the messages go. Colleagues, friends and jokes are not evidence. State what was and was not found.\n":"")+"\n"+
+  "MEASURED FACTS\n"+deepFacts(D)+"\n\nMESSAGES (a wide selection in date order, '...' marks gaps)\n"+deepPick(D).text+"\n\n"+
   "Reply with JSON only, no other text, in this shape:\n"+
-  "{\"story\": string, \"reasons\": [{\"reason\": string, \"strength\": number, \"confidence\": \"low\"|\"medium\"|\"high\", \"evidence\": [{\"date\": \"YYYY-MM-DD\", \"quote\": string}], \"note\": string}]}\n"+
-  (D.mode==="active"||!(D.type==="romantic"||D.type==="married")?"This is NOT a romantic breakup analysis. In story, describe how healthy the relationship looks, what could be better and why, in terms that fit this kind of relationship. Return an empty reasons list.\n":"")+
-  "Add a field \"type\" with your own reading of the kind of relationship: romantic, married, family, friend, client, work or other.\n"+
-  "story: two or three short paragraphs separated by a blank line, in plain language, addressed as 'you' only if it is clear who the reader is, otherwise use the names. Cover what the relationship looked like in the chat, when and how it changed, whether there were signs beforehand, and what the messages suggest about why. End with one sentence on what the chat cannot show.\n"+
-  "reasons: exactly these seven, in any order: \"Work and career\", \"Time and logistics\", \"Routine and boredom\", \"Communication and conflict\", \"Different futures\", \"Money\", \"Someone else\". strength is 0 to 100 for how much evidence appears in the messages, not the probability it is true. Give up to three evidence items per reason, each a real short quote from the extract with its date. Use an empty evidence list and a low strength when the chat shows little. For \"Someone else\" be especially conservative: jokes, friends and colleagues are not evidence.";
+  "{\"headline\": string, \"chapters\": [{\"title\": string, \"body\": string}], \"turning_points\": [{\"date\": \"YYYY-MM-DD\", \"what\": string, \"quote\": string}], \"sides\": [{\"name\": string, \"view\": string}], \"reasons\": [{\"reason\": string, \"strength\": number, \"confidence\": \"low\"|\"medium\"|\"high\", \"evidence\": [{\"date\": \"YYYY-MM-DD\", \"quote\": string}], \"note\": string}], \"takeaways\": [string], \"cannot_show\": string, \"type\": string}\n"+
+  "headline: one sentence that says what happened.\n"+
+  "chapters: these, in this order: "+chapters+". Each body is one to three short paragraphs separated by a blank line.\n"+
+  "turning_points: three to six dated moments that changed the course of things, each with one short real quote, or an empty string if there is none.\n"+
+  "sides: two entries, one per person: how things looked from their side, judged only from what they wrote.\n"+
+  (rom&&ended?"reasons: exactly these seven: \"Work and career\", \"Time and logistics\", \"Routine and boredom\", \"Communication and conflict\", \"Different futures\", \"Money\", \"Someone else\". strength is 0 to 100 for how much evidence appears in the messages, not the chance it is true. Up to three evidence items each, real short quotes with dates. Low strength and no evidence when the chat shows little.\n":"reasons: an empty list.\n")+
+  "takeaways: three or four specific things the reader can take from this, not generic advice.\n"+
+  "cannot_show: one or two sentences on what this conversation cannot tell them.\n"+
+  "type: your own reading of the relationship: romantic, married, family, friend, client, work or other.";
 }
-function parseJson(txt){var a=txt.indexOf("{"),b=txt.lastIndexOf("}");if(a<0||b<0){throw new Error("no json");}return JSON.parse(txt.slice(a,b+1));}
+function renderDeep(j,D){
+  var out=$("deepOut");out.replaceChildren();
+  $("storyText").className="story lead";
+  $("storyText").textContent=String(j.headline||j.story||"").trim();
+  (Array.isArray(j.chapters)?j.chapters:[]).forEach(function(c){out.appendChild(h("h3",null,String(c.title||"")));String(c.body||"").split(/\n\s*\n/).forEach(function(p){if(p.trim()){out.appendChild(h("p","story",p.trim()));}});});
+  if(Array.isArray(j.turning_points)&&j.turning_points.length){out.appendChild(h("h3",null,"Turning points"));var ul=h("ul","checks");j.turning_points.forEach(function(t){var li=h("li"),d=new Date(String(t.date)+"T12:00:00");li.appendChild(h("span","no",isNaN(d)?String(t.date||""):fmtDate(d)));li.appendChild(h("b",null,String(t.what||"")));if(t.quote){li.appendChild(h("q",null,String(t.quote)));}ul.appendChild(li);});out.appendChild(ul);}
+  if(Array.isArray(j.sides)&&j.sides.length){out.appendChild(h("h3",null,"Each side"));j.sides.forEach(function(sd){var p=h("p","story");p.appendChild(h("b",null,String(sd.name||"")+": "));p.appendChild(document.createTextNode(String(sd.view||"")));out.appendChild(p);});}
+  if(Array.isArray(j.takeaways)&&j.takeaways.length){out.appendChild(h("h3",null,"What to take from it"));var u2=h("ul","plainlist");j.takeaways.forEach(function(t){u2.appendChild(h("li",null,String(t)));});out.appendChild(u2);}
+  if(j.cannot_show){out.appendChild(h("p","small muted",String(j.cannot_show)));}
+  if(j.type&&TYPE_LABEL[j.type]&&j.type!==D.type&&!chosenType){out.appendChild(h("p","small muted","The AI reads this as: "+TYPE_LABEL[j.type].toLowerCase()+". If that is right, change the type at the top and unlock again."));}
+}
+function fillPro(D,hasClaude){
+  var L=TW[D.type]||TW.other,rom=D.type==="romantic"||D.type==="married",A=D.names[0],B=D.names[1],items=[],ul=$("proList");
+  if(D.mode==="ended"){
+    items.push((D.gradual?"From around ":"The week of ")+fmtDate(D.weeks[D.change].start)+": what was said in the days before and after");
+    items.push("Each side of it, "+A+"'s and "+B+"'s, from what each of you wrote");
+    items.push(rom?"The usual reasons for a "+L.end+", ranked, with the messages behind each":"What changed between you, with the messages that show it");
+    items.push("The signs that were there, and whether they could have been seen at the time");
+  }else{
+    if(D.silent){items.push("The silence since "+fmtDate(D.silent.since)+": what the last conversations show");}
+    items.push("What is working between "+A+" and "+B+", with real examples");
+    items.push("Where it is uneven, and what the conversation shows about why");
+    items.push("The moments that mattered most");
+  }
+  items.push("What to take from it");
+  ul.replaceChildren();items.forEach(function(t){ul.appendChild(h("li",null,t));});
+  var n=deepPick(D).count,btn=$("write"),code=$("proCode"),note=$("writeNote");
+  $("proLead").textContent="The numbers above say what changed and when. Why it happened is in the conversation itself. The deep reading is a full account written by AI from every chart on this page and about "+n.toLocaleString()+" of your messages, chosen around the moments that mattered.";
+  btn.disabled=false;
+  if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
+  else if(REPORT_ENDPOINT){code.hidden=false;btn.textContent="Unlock the deep reading";note.textContent="Enter your access code. Pressing the button sends those messages and the figures to the AI. Nothing is sent before you press it.";}
+  else{code.hidden=true;btn.disabled=true;btn.textContent="Opening soon";note.textContent="The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.";}
+}
 async function writeReport(){
-  var btn=$("write"),story=$("storyText");
-  if(!current||current.example){return;}
-  btn.disabled=true;var keep=story.textContent;story.textContent="Reading the messages around the moments that mattered. This can take a minute.";
+  var btn=$("write"),D=current,note=$("writeNote");
+  if(!D||D.example){return;}
+  var label=btn.textContent;btn.disabled=true;btn.textContent="Reading the conversation. This can take a minute or two.";
   try{
-    var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null;
-    var res;
-    if(sample){res=await sample(buildPrompt(current),{modelTier:"complex",cache:false});}
+    var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null,res,prompt=buildDeepPrompt(D);
+    if(sample){res=await sample(prompt,{modelTier:"complex",cache:false});}
     else if(REPORT_ENDPOINT){
-      var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:buildPrompt(current)})});
-      if(!rr.ok){throw {code:rr.status===429?"rate_limited":"failed"};}
+      var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim()})});
+      if(!rr.ok){throw {code:rr.status===402?"code":rr.status===429?"rate_limited":"failed"};}
       res=await rr.json();
-    }
-    else{story.textContent="The written report is not connected in this view. The timings and signals above are complete without it.";btn.disabled=false;return;}
+    }else{throw {code:"closed"};}
     var j=parseJson(res.text||"");
-    story.textContent=String(j.story||"").trim()||"Claude returned no account. Try again.";
-    if(Array.isArray(j.reasons)&&j.reasons.length&&current.mode==="ended"&&(current.type==="romantic"||current.type==="married")){renderReasons(j.reasons,false);$("reasonHint").hidden=true;}
-    if(j.type&&TYPE_LABEL[j.type]&&j.type!==current.type&&!chosenType){story.textContent+="\n\nThe AI reads this as: "+TYPE_LABEL[j.type].toLowerCase()+". If that is right, change the type at the top and the page will adjust.";}
-    btn.textContent="Write it again";
+    if(current!==D){return;}
+    renderDeep(j,D);$("storyCard").hidden=false;$("proCard").hidden=true;
+    $("storyHint").textContent="Written by AI from the charts above and a wide selection of your messages.";
+    if(D.mode==="ended"&&(D.type==="romantic"||D.type==="married")&&Array.isArray(j.reasons)&&j.reasons.length){
+      j.reasons.forEach(function(r){if(/someone else/i.test(String(r.reason))&&D.se){r.signals=D.se.signals;}});
+      renderReasons(j.reasons,false);$("reasonHint").hidden=true;$("reasons").hidden=false;
+    }
+    return;
   }catch(e){
     var code=e&&e.code;
-    story.textContent=code==="not_granted"?"You declined to send the extract, so no written report was made. The timings and signals above do not need it.":code==="rate_limited"?"Claude is busy right now. Wait a minute and press the button again.":"The deeper report could not be written this time. Press the button to try again.";
-    if(keep){story.textContent=keep+"\n\n"+story.textContent;}
+    note.textContent=code==="code"?"That access code was not recognised. Check it and try again.":code==="not_granted"?"You declined to send the messages, so nothing was written.":code==="rate_limited"?"The AI is busy right now. Wait a minute and try again.":code==="closed"?"The deep reading is not open yet.":"The deep reading could not be written this time. Try again.";
   }
-  btn.disabled=false;
+  btn.disabled=false;btn.textContent=label;
 }
 
 /* ---------- loading a file ---------- */
@@ -1262,8 +1343,7 @@ async function classifyAI(D){
   try{
     var M=D.msgs.filter(function(m){return !isMedia(m.text)&&!isCall(m.text);}),step=Math.max(1,Math.floor(M.length/90)),lines=[];
     for(var i=0;i<M.length&&lines.length<90;i+=step){lines.push(M[i].who+": "+M[i].text.replace(/\s+/g," ").slice(0,120));}
-    var prompt="Below is a sample of messages from a WhatsApp chat between two people. Decide what kind of relationship it is. Reply with JSON only, no other text: {\"type\": \"romantic\"|\"married\"|\"family\"|\"friend\"|\"client\"|\"work\"|\"other\", \"confidence\": \"low\"|\"medium\"|\"high\"}. Use client for a customer and supplier or adviser relationship, work for colleagues, married for spouses or long term partners sharing a household.\n\n"+lines.join("\n");
-    var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt})});
+    var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind:"type",sample:lines.join("\n")})});
     if(!rr.ok){return;}
     var j=parseJson((await rr.json()).text||"");
     if(j&&TYPE_LABEL[j.type]&&j.confidence!=="low"&&!chosenType&&current===D){aiType=j.type;show(lastMsgs,lastMe);}
@@ -1276,20 +1356,20 @@ function show(msgs,me){
   current=D;render(D);
   var L=TW[D.type]||TW.other,rom=D.type==="romantic"||D.type==="married";
   var bn=$("banner");bn.className="banner real";bn.replaceChildren(h("strong",null,"Your chat."),h("span",null,D.names[0]+" and "+D.names[1]+", "+fmtDate(D.msgs[0].t)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+". Read on this device."));
-  var hasAI=!!((window.claude&&window.claude.use)||REPORT_ENDPOINT);
-  $("write").hidden=!hasAI;$("writeNote").hidden=!hasAI;$("write").textContent="Write a deeper report";
-  $("storyHint").textContent=hasAI?"A first reading, made on this device from the numbers and the words in your chat. Press the button for a deeper account written by AI.":"Made on this device from the numbers and the words in your chat. Nothing was sent anywhere.";
+  var hasClaude=!!(window.claude&&window.claude.use);
+  $("storyCard").hidden=true;$("storyText").textContent="";$("deepOut").replaceChildren();$("proCard").hidden=false;
+  $("storyHint").textContent="The charts say what changed and when. Why is a different question, and the honest answer is in the messages themselves.";
+  D.soft=D.soft||[];
   if(D.mode==="active"){
-    $("storyText").textContent=activeStory(D,D.ms,D.health,D.imp);renderMeasures(D.ms);$("reasonHint").hidden=true;
+    renderMeasures(D.ms);$("reasonHint").hidden=true;$("reasons").hidden=false;
   }else if(rom){
-    var themes=wordThemes(D).filter(function(t){return t.reason!=="Someone else";});themes.push(someoneElse(D));
-    $("storyText").textContent=localStory(D,themes,D.soft||[]);renderReasons(themes,false);$("reasonHint").hidden=false;
+    D.themes=wordThemes(D).filter(function(t){return t.reason!=="Someone else";});D.se=someoneElse(D);$("reasons").hidden=true;D.ms=measures(D,D.weeks.slice(Math.max(0,D.change-26),D.change));
   }else{
     var c=D.change,ms=measures(D,D.weeks.slice(Math.max(0,c-26),c));
     if(D.type==="client"||D.type==="work"){var chE=chasing(D,D.weeks[Math.max(0,c-26)].start);if(chE){ms.push(chE);}}
-    D.ms=ms;
-    $("storyText").textContent=localStory(D,null,D.soft||[]);renderMeasures(ms);$("reasonHint").hidden=true;
+    D.ms=ms;renderMeasures(ms);$("reasonHint").hidden=true;$("reasons").hidden=false;
   }
+  fillPro(D,hasClaude);
   setStatus("");
   $("doneNames").textContent=D.names[0]+" and "+D.names[1];
   $("doneMeta").textContent=D.msgs.length.toLocaleString()+" messages, "+fmtDate(D.msgs[0].t)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+". Read on this device only.";
@@ -1390,7 +1470,7 @@ document.addEventListener("keydown",function(e){
 });
 /* first paint: the example */
 current=exampleData();render(current);
-$("storyText").textContent=EX_STORY;renderReasons(EX_REASONS,true);
+$("storyText").className="story";$("storyText").textContent=EX_STORY;renderReasons(EX_REASONS,true);
 })();
 </script>
 </body>
