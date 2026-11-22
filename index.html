@@ -1696,10 +1696,9 @@ function fillPro(D,hasClaude){
   $("proLead").textContent="The numbers above say what changed and when. Why it happened is in the conversation itself. The deep reading is a full account written by AI from every chart on this page and about "+n.toLocaleString()+" of your messages, chosen around the moments that mattered.";
   btn.disabled=false;
   if(acctMode()!=="off"){code.hidden=true;
-    if(isPro()){btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to "+(hasClaude?"Claude":"the AI")+". Nothing is sent before you press it.";}
+    if(isPro()||friendCode()){btn.textContent="Write the deep reading";note.textContent=(friendCode()&&!isPro()?"Free with your friends and family link. ":"")+"Pressing this sends those messages and the figures to "+(hasClaude?"Claude":"the AI")+". Nothing is sent before you press it.";}
     else{btn.textContent="Unlock the deep reading";note.textContent="Part of Pro. Nothing is sent anywhere until you unlock it and press the button. Everything else on this page stays on this device.";}}
   else if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
-  else if(reportUrl()&&friendCode()){code.value=friendCode();code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Free with your friends and family link. Pressing this sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else if(REPORT_ENDPOINT){code.hidden=false;btn.textContent="Unlock the deep reading";note.textContent="Enter your access code. Pressing the button sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else{code.hidden=true;btn.disabled=true;btn.textContent="Opening soon";note.textContent="The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.";}
 }
@@ -1712,7 +1711,7 @@ async function writeReport(){
     var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null,res,prompt=buildDeepPrompt(D);
     if(sample){res=await sample(prompt,{modelTier:"complex",cache:false});}
     else if(reportUrl()){
-      var rr=await fetch(reportUrl(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim(),token:signedIn()?acct.token:null})});
+      var rr=await fetch(reportUrl(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:friendCode()||String($("proCode").value||"").trim(),token:signedIn()?acct.token:null})});
       if(!rr.ok){throw {code:rr.status===402?"code":rr.status===429?"rate_limited":"failed"};}
       res=await rr.json();
     }else{throw {code:"closed"};}
@@ -1992,7 +1991,7 @@ async function loadMany(files,pasted,keep){
     else{byKey[c.key]=c;uniq.push(c);}});
   /* without an account: one chat is free. More need a free account. */
   var lockedN=0;
-  if(acctMode()!=="off"&&!signedIn()){
+  if(acctMode()!=="off"&&!signedIn()&&!friendCode()){
     var fk=freeKey(),okc=uniq.filter(function(c){return fk?hashKey(c.key)===fk:true;}).slice(0,1);
     if(!okc.length){pendingLoad={files:files,pasted:pasted,keep:keep};setStatus("Your free chat is used. A free account lets you add as many as you like.",true);gate("chats");return;}
     lockedN=uniq.length-okc.length;uniq=okc;
@@ -2002,7 +2001,7 @@ async function loadMany(files,pasted,keep){
     var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}
   });
   if(!added.length){setStatus(errors[0]||(skipped&&skipped.message)||"That file could not be read.",true);return;}
-  if(acctMode()!=="off"&&!signedIn()&&!freeKey()){setFreeKey(hashKey(chats[added[0]].key));}
+  if(acctMode()!=="off"&&!signedIn()&&!friendCode()&&!freeKey()){setFreeKey(hashKey(chats[added[0]].key));}
   var me=commonMe();
   chats.forEach(function(c,k){if(me){c.me=me;}try{c.summary=summarise(prepare(analyse(c.msgs,c.me),c));}catch(e){}});
   if(keep&&active>=0){saveMap();try{openChat(active);}catch(e){}}
@@ -2076,16 +2075,15 @@ function friendCode(){
   try{var m=/friends?[=:\-]([A-Za-z0-9_\-]{3,40})/i.exec(location.hash||"");if(m){localStorage.setItem("wh_friend_v1",m[1]);return m[1];}return localStorage.getItem("wh_friend_v1")||null;}catch(e){return null;}
 }
 function acctMode(){
-  if(friendCode()){return "off";}
   var hs="";try{hs=location.hash||"";}catch(e){}
-  if(ACCOUNT_ENDPOINT&&GOOGLE_CLIENT_ID&&(ACCOUNTS_PUBLIC||/live/i.test(hs))){return "live";}
+  if(ACCOUNT_ENDPOINT&&GOOGLE_CLIENT_ID&&(ACCOUNTS_PUBLIC||friendCode()||/live/i.test(hs))){return "live";}
   var demo=false;try{demo=/demo/i.test(location.hash||"")||!!(window.claude&&window.claude.use);}catch(e){}
   return demo?"demo":"off";
 }
 function signedIn(){return !!(acct&&acct.user&&acct.mode===acctMode());}
 function isPro(){return signedIn()&&acct.user.plan==="pro";}
 function saveAcct(){try{if(acct){localStorage.setItem("wh_acct_v1",JSON.stringify(acct));}else{localStorage.removeItem("wh_acct_v1");}}catch(e){}}
-function can(what){if(acctMode()==="off"){return true;}var need=GATES[what];return need==="pro"?isPro():need==="account"?signedIn():true;}
+function can(what){if(acctMode()==="off"||friendCode()){return true;}var need=GATES[what];return need==="pro"?isPro():need==="account"?signedIn():true;}
 function gate(what,next){if(can(what)){return true;}acctNext=next||null;openAcct(what);return false;}
 function hashKey(s){var x=5381;for(var i=0;i<s.length;i++){x=((x<<5)+x+s.charCodeAt(i))|0;}return (x>>>0).toString(36);}
 function freeKey(){try{return localStorage.getItem("wh_free_v1")||null;}catch(e){return null;}}
@@ -2165,7 +2163,7 @@ async function refreshAcct(){
 }
 function renderAcct(){
   var m=acctMode(),chip=$("acctChip");chip.hidden=m==="off";$("acctMenu").hidden=true;
-  var nt=$("nudgeTop"),nm=$("nudgeMore"),D=current&&!current.example?current:null,showN=m!=="off"&&!isPro()&&!!D;
+  var nt=$("nudgeTop"),nm=$("nudgeMore"),D=current&&!current.example?current:null,showN=m!=="off"&&!isPro()&&!friendCode()&&!!D;
   nt.hidden=!showN;nm.hidden=!showN;
   if(showN){var w=whyTitle(D);$("nudgeTopText").textContent=w+" The charts show what changed. The deep reading answers this from the messages themselves.";$("nudgeMoreText").textContent="Ten charts in, the question is still why. "+w;}
   if(m==="off"){return;}

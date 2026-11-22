@@ -17,6 +17,7 @@
      PRO_CODES         secret   optional. Access codes, comma separated. A signed in user who enters one becomes Pro.
      PRO_EMAILS        text     optional. Emails that are always Pro, comma separated (for you and testers).
      WHY_MONTHLY_CAP   text     optional. Deep readings allowed per account per month. Default 30.
+     CODE_DAILY_CAP    text     optional. Deep readings allowed per access code per day (friends links). Default 40.
 
    Storage (Worker > Settings > Bindings): one KV namespace bound as ACCOUNTS.
      One entry per person: name, email, plan, counters and their relationship summaries
@@ -217,7 +218,7 @@ export default {
 
     /* ----- AI ----- */
     if (!env.AI_KEY) return json({ error: "AI not configured" }, 500);
-    let messages, maxTokens, rec = null;
+    let messages, maxTokens, rec = null, codeKey = null;
     if (kind === "type") {
       const sample = String(body.sample || "").slice(0, 14000);
       if (sample.length < 200) return json({ error: "sample too short" }, 400);
@@ -231,6 +232,12 @@ export default {
       if (!byCode && !(rec && planOf(env, rec) === "pro")) return json({ error: rec ? "pro needed" : "sign in needed" }, 402);
       const prompt = String((body && body.prompt) || "");
       if (prompt.length < 500 || prompt.length > 400000) return json({ error: "bad prompt" }, 400);
+      if (byCode && !(rec && planOf(env, rec) === "pro") && db) {
+        codeKey = "c:" + code + ":" + new Date().toISOString().slice(0, 10);
+        const capC = parseInt(env.CODE_DAILY_CAP || "40", 10) || 40;
+        if (parseInt((await db.get(codeKey)) || "0", 10) >= capC) return json({ error: "daily limit reached" }, 429);
+        rec = null;
+      }
       if (rec) {
         const month = new Date().toISOString().slice(0, 7), cap = parseInt(env.WHY_MONTHLY_CAP || "30", 10) || 30;
         rec.why = rec.why || {};
@@ -256,6 +263,10 @@ export default {
       const month = new Date().toISOString().slice(0, 7);
       rec.why = { [month]: ((rec.why || {})[month] || 0) + 1 };
       await store(rec);
+    }
+    if (codeKey && text) {
+      const used = parseInt((await db.get(codeKey)) || "0", 10);
+      await db.put(codeKey, String(used + 1), { expirationTtl: 172800 });
     }
     return json({ text: text || "" });
   },
