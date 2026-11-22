@@ -621,7 +621,11 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 /* CONFIG: on your own website, paste the address of your relay here, for example "https://whathappened-relay.YOURNAME.workers.dev". Leave empty inside Claude. */
 var REPORT_ENDPOINT="";
 /* CONFIG: the Google sign in client ID (ends in .apps.googleusercontent.com). With both lines filled in, accounts go live. */
-var GOOGLE_CLIENT_ID="";
+var GOOGLE_CLIENT_ID="906081660555-mig148eotvn8hg94vdvpk4ih6uu5tdha.apps.googleusercontent.com";
+/* CONFIG: the relay address for accounts. It receives sign in, plan and summaries only. */
+var ACCOUNT_ENDPOINT="https://whathappened-relay.cconcham.workers.dev/";
+/* CONFIG: false = accounts only switch on when the address ends in #live (for testing). true = on for everyone. */
+var ACCOUNTS_PUBLIC=false;
 var $=function(id){return document.getElementById(id);};
 var NS="http://www.w3.org/2000/svg";
 function el(tag,attrs,text){var e=document.createElementNS(NS,tag);for(var k in attrs){e.setAttribute(k,attrs[k]);}if(text!=null){e.textContent=text;}return e;}
@@ -2043,7 +2047,8 @@ var GATES={chats:"account",more:"account",map:"account",why:"pro"};
 var acct=null,acctNext=null,pendingLoad=null,acctView=null;
 try{acct=JSON.parse(localStorage.getItem("wh_acct_v1")||"null");}catch(e){acct=null;}
 function acctMode(){
-  if(REPORT_ENDPOINT&&GOOGLE_CLIENT_ID){return "live";}
+  var hs="";try{hs=location.hash||"";}catch(e){}
+  if(ACCOUNT_ENDPOINT&&GOOGLE_CLIENT_ID&&(ACCOUNTS_PUBLIC||/live/i.test(hs))){return "live";}
   var demo=false;try{demo=/demo/i.test(location.hash||"")||!!(window.claude&&window.claude.use);}catch(e){}
   return demo?"demo":"off";
 }
@@ -2056,7 +2061,7 @@ function hashKey(s){var x=5381;for(var i=0;i<s.length;i++){x=((x<<5)+x+s.charCod
 function freeKey(){try{return localStorage.getItem("wh_free_v1")||null;}catch(e){return null;}}
 function setFreeKey(k){try{localStorage.setItem("wh_free_v1",k);}catch(e){}}
 async function api(body){
-  var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  var rr=await fetch(ACCOUNT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!rr.ok){var er=new Error("api");er.status=rr.status;throw er;}
   return rr.json();
 }
