@@ -86,6 +86,18 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 .reason .note{font-size:13px;color:var(--muted)}
 .reason .warn{font-size:13px;color:var(--warn)}
 #langNote{color:var(--warn)}
+.topright{display:flex;align-items:center;gap:16px;position:relative}
+.acctbtn{font:600 15px var(--body);background:none;border:1.5px solid var(--ink);color:var(--ink);border-radius:999px;padding:8px 16px;cursor:pointer;min-height:40px}
+.acctmenu{position:absolute;right:0;top:calc(100% + 16px);background:#fff;border-radius:18px;padding:16px;width:270px;box-shadow:0 20px 50px rgba(20,22,43,.22);display:flex;flex-direction:column;gap:2px;align-items:flex-start;z-index:6}
+.acctmenu[hidden]{display:none}
+.acctmenu p{margin:0 0 4px}
+.acctbox{width:min(520px,100%);gap:12px}
+.acctbox .btn{align-self:flex-start}
+.acctbox .err{color:var(--warn);min-height:1em;margin:0}
+.nudge{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding:14px 18px;border-radius:18px;background:color-mix(in srgb,var(--a) 8%,#fff);border:1px solid color-mix(in srgb,var(--a) 22%,transparent)}
+.nudge[hidden]{display:none}
+.nudge p{margin:0;flex:1 1 260px}
+@media (max-width:520px){.topright.has-acct>a{display:none}}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .steps .n{font-family:var(--mono);color:var(--muted);font-size:13px}
 .soon .pill{margin-bottom:8px}
@@ -403,7 +415,9 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 
 <header class="top">
   <div class="mark"><svg class="logo" viewBox="0 0 44 40" aria-hidden="true"><path d="M11 3h14a9 9 0 0 1 9 9v5a9 9 0 0 1-9 9H14l-7 6 1.6-7.4A9 9 0 0 1 2 17v-5a9 9 0 0 1 9-9z" fill="#FF8A4C"/><path d="M22 14h11a9 9 0 0 1 9 9v3a9 9 0 0 1-5.6 8.3L38 40l-7-5h-9a9 9 0 0 1-9-9v-3a9 9 0 0 1 9-9z" fill="#FF6FAE" stroke="#fff" stroke-width="2.5"/></svg>WhatHappened</div>
-  <a href="#drop">Add your chat</a>
+  <div class="topright" id="topRight"><a href="#drop">Add your chat</a><span id="acctChip" hidden><button class="acctbtn" id="acctBtn" type="button" aria-haspopup="true">Sign in</button></span>
+    <div class="acctmenu" id="acctMenu" hidden><p class="small muted" id="acctWho"></p><button class="linkbtn" id="acctUp" type="button">Unlock the deep reading</button><button class="linkbtn" id="acctOut" type="button">Sign out</button><button class="linkbtn" id="acctDel" type="button">Delete my account</button></div>
+  </div>
 </header>
 
 <section class="hero">
@@ -417,9 +431,9 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
         <button type="button" role="tab" id="tab-file" aria-controls="pane-file" aria-selected="false">Upload file <span class="best">Best</span></button>
       </div>
       <div id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" class="pane">
-        <textarea id="paste" aria-label="Pasted WhatsApp messages" placeholder="Paste your WhatsApp messages here"></textarea>
+        <textarea id="paste" aria-label="Pasted chat messages" placeholder="Paste your chat here. WhatsApp or Telegram."></textarea>
         <button class="btn" id="usePaste" type="button">Show me what happened</button>
-        <p class="small muted">Copy from WhatsApp Web or the desktop app. For the whole story, upload the full chat.</p>
+        <p class="small muted">Copy the messages from WhatsApp Web, the WhatsApp desktop app or Telegram Desktop. For the whole story, upload the full chat.</p>
       </div>
       <div id="pane-file" role="tabpanel" aria-labelledby="tab-file" class="pane" hidden>
         <div class="demo" id="demo" data-os="ios">
@@ -491,6 +505,7 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 <section class="sec" id="answer">
   <h2>In short</h2>
   <div class="tiles" id="tiles"></div>
+  <div class="nudge" id="nudgeTop" hidden><p class="small" id="nudgeTopText"></p><button class="btn" id="nudgeTopBtn" type="button">See the deep reading</button></div>
 </section>
 
 <section class="sec" id="timeline">
@@ -540,18 +555,19 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
     <p class="small muted" id="moreNote">Your own chat adds affection, curiosity, message length, photos, calls, matching style and the hours you wrote.</p>
     <div class="leg" id="legend2"></div>
     <div class="two" id="moreCharts"></div>
+    <div class="nudge" id="nudgeMore" hidden><p class="small" id="nudgeMoreText"></p><button class="btn" id="nudgeMoreBtn" type="button">See the deep reading</button></div>
   </div>
 </section>
 
 <section class="sec" id="mapSec">
-  <h2>All your relationships <span class="pill early">Pro</span></h2>
+  <h2>All your relationships <span class="pill early">Free account</span></h2>
   <p class="say" id="mapSay">How are you doing at work, with friends, with family?</p>
   <p class="muted">Each reading above is about two people. Add more of your chats here to see them side by side and compare by kind of relationship.</p>
   <div class="reasons" id="mapCats"></div>
   <div class="card" id="mapListCard" hidden><div class="rels" id="mapList"></div></div>
   <div class="donebtns"><button class="btn alt" id="mapAdd" type="button">Add relationships</button><button class="linkbtn" id="mapClear" type="button">Clear the list</button></div>
   <input type="file" id="file2" multiple accept=".txt,.zip,.json,text/plain,application/json,application/zip,application/x-zip-compressed" hidden>
-  <p class="small muted" id="mapNote">Choose several exported chats at once. Free while this is in testing. A summary of each is remembered in this browser: names, type, state and scores. No messages are stored.</p>
+  <p class="small muted" id="mapNote">Choose several exported chats at once. A summary of each is remembered in this browser: names, type, state and scores. No messages are stored.</p>
 </section>
 
 <section class="sec soon" id="more">
@@ -571,6 +587,21 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 <footer>WhatHappened is a prototype. It is not counselling or advice. If a breakup is weighing on you heavily, talking to someone you trust or a professional will help more than a chart.</footer>
 </div>
 
+<div id="acct" class="zoom" hidden role="dialog" aria-modal="true" aria-labelledby="acctTitle">
+  <div class="zoombox acctbox">
+    <button id="acctClose" class="zoomx" type="button">Close</button>
+    <p class="eyebrow" id="acctEyebrow">Free account</p>
+    <h3 id="acctTitle"></h3>
+    <p class="muted" id="acctLead"></p>
+    <ul class="plainlist prolist" id="acctList"></ul>
+    <div id="acctGoogle"></div>
+    <button class="btn" id="acctDemo" type="button" hidden>Continue with Google (demo)</button>
+    <div class="prorow" id="acctCodeRow" hidden><input id="acctCode" type="text" placeholder="Access code" autocomplete="off" autocapitalize="characters" aria-label="Access code"><button class="btn" id="acctRedeem" type="button">Unlock</button></div>
+    <p class="small err" id="acctErr" role="alert"></p>
+    <p class="small muted" id="acctNote"></p>
+  </div>
+</div>
+
 <div id="zoom" class="zoom" hidden role="dialog" aria-modal="true" aria-label="Chart, enlarged">
   <div class="zoombox">
     <button id="zoomClose" class="zoomx" type="button">Close</button>
@@ -588,6 +619,8 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 "use strict";
 /* CONFIG: on your own website, paste the address of your relay here, for example "https://whathappened-relay.YOURNAME.workers.dev". Leave empty inside Claude. */
 var REPORT_ENDPOINT="";
+/* CONFIG: the Google sign in client ID (ends in .apps.googleusercontent.com). With both lines filled in, accounts go live. */
+var GOOGLE_CLIENT_ID="";
 var $=function(id){return document.getElementById(id);};
 var NS="http://www.w3.org/2000/svg";
 function el(tag,attrs,text){var e=document.createElementNS(NS,tag);for(var k in attrs){e.setAttribute(k,attrs[k]);}if(text!=null){e.textContent=text;}return e;}
@@ -603,6 +636,30 @@ function r1(x){return x==null?null:Math.round(x*10)/10;}
 /* ---------- parsing ---------- */
 var RX=/^\[?(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4}),? (\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?\]?(?: -)? ([^:]{1,60}?): ([\s\S]*)$/;
 var RX2=/^\[(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?, (\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\] ([^:]{1,60}?): ([\s\S]*)$/;
+/* Text copied from Telegram Desktop: "Name, [date time]" on one line, then the message. */
+var TGMON={jan:0,ene:0,gen:0,feb:1,fev:1,"fév":1,mar:2,"mär":2,apr:3,abr:3,avr:3,may:4,mai:4,mag:4,jun:5,giu:5,jul:6,lug:6,aug:7,ago:7,"aoû":7,sep:8,set:8,oct:9,okt:9,out:9,ott:9,nov:10,dec:11,dic:11,dez:11,"déc":11};
+function tgMonth(w){w=w.toLowerCase();if(w.slice(0,4)==="juin"){return 5;}if(w.slice(0,4)==="juil"){return 6;}var m=TGMON[w.slice(0,3)];return m==null?-1:m;}
+function parseTgPaste(lines){
+  var raw=[],cur=null,i,m,x,firstBig=0,secondBig=0;
+  for(i=0;i<lines.length;i++){
+    m=/^(.{1,60}?), \[([^\]]{6,40})\]\s*$/.exec(lines[i]);var st=null;
+    if(m){var b=m[2];
+      if((x=/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})[ T,]+(?:at )?(\d{1,2}):(\d{2})(?::\d{2})? ?([AaPp])?/.exec(b))){st={y:+x[1],mo:+x[2],d:+x[3],h:+x[4],mi:+x[5],ap:x[6]};}
+      else if((x=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4}),? +(?:at )?(\d{1,2}):(\d{2})(?::\d{2})? ?([AaPp])?/.exec(b))){st={a:+x[1],b:+x[2],y:+x[3],h:+x[4],mi:+x[5],ap:x[6]};if(st.a>12){firstBig++;}if(st.b>12){secondBig++;}}
+      else if((x=/^(\d{1,2})\.? ([A-Za-zÀ-ÿ]{3,})\.?,? (\d{4}),? +(?:at )?(\d{1,2}):(\d{2})(?::\d{2})? ?([AaPp])?/.exec(b))&&tgMonth(x[2])>=0){st={y:+x[3],mo:tgMonth(x[2])+1,d:+x[1],h:+x[4],mi:+x[5],ap:x[6]};}
+      else if((x=/^([A-Za-zÀ-ÿ]{3,})\.? (\d{1,2}),? (\d{4}),? +(?:at )?(\d{1,2}):(\d{2})(?::\d{2})? ?([AaPp])?/.exec(b))&&tgMonth(x[1])>=0){st={y:+x[3],mo:tgMonth(x[1])+1,d:+x[2],h:+x[4],mi:+x[5],ap:x[6]};}
+    }
+    if(st){cur={who:m[1].trim(),st:st,text:""};raw.push(cur);}
+    else if(cur){cur.text+=(cur.text?"\n":"")+lines[i];}
+  }
+  var dayFirst=secondBig<=firstBig,out=[];
+  raw.forEach(function(r){var s2=r.st,y=s2.y<100?s2.y+2000:s2.y,mo=s2.mo!=null?s2.mo:(dayFirst?s2.b:s2.a),d=s2.d!=null?s2.d:(dayFirst?s2.a:s2.b),hh=s2.h;
+    if(s2.ap){hh=hh%12+(/p/i.test(s2.ap)?12:0);}
+    var t=new Date(y,mo-1,d,hh,s2.mi),tx=r.text.replace(/\s+$/,"");if(isNaN(t)||!tx){return;}
+    out.push({t:t,who:r.who,text:tx});});
+  out.sort(function(a,b){return a.t-b.t;});
+  return out;
+}
 var RX3=/^\[?(\d{4})[\/.\-] ?(\d{1,2})[\/.\-] ?(\d{1,2})\.?,? (?:(오전|오후|上午|下午|午前|午後|凌晨|早上|中午|晚上) ?)?(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))? ?([AaPp])?\.? ?[Mm]?\.?\]?(?: -)? ([^:]{1,60}?): ([\s\S]*)$/;
 function parseChat(text){
   var lines=text.replace(/[‎‏﻿]/g,"").replace(/[  ]/g," ").split(/\r?\n/);
@@ -624,6 +681,7 @@ function parseChat(text){
     msgs.push({t:t,who:m[8].trim(),text:m[9]});
   }
   msgs.sort(function(a,b){return a.t-b.t;});
+  if(msgs.length<20){var tgp=parseTgPaste(lines);if(tgp.length>msgs.length){return tgp;}}
   return msgs;
 }
 function isCall(x){return /voice call|video call|missed call/i.test(x)||(x.length<70&&/llamada (de voz|de video|perdida)|videollamada perdida|chamada (de voz|de v[ií]deo) perdida|ligação (de voz|de vídeo) perdida|appel (vocal|vidéo) manqué|verpasster (sprach|video)anruf|chiamata (vocale|video) persa|videochiamata persa/i.test(x));}
@@ -1608,19 +1666,23 @@ function fillPro(D,hasClaude){
   var n=deepPick(D).count,btn=$("write"),code=$("proCode"),note=$("writeNote");
   $("proLead").textContent="The numbers above say what changed and when. Why it happened is in the conversation itself. The deep reading is a full account written by AI from every chart on this page and about "+n.toLocaleString()+" of your messages, chosen around the moments that mattered.";
   btn.disabled=false;
-  if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
+  if(acctMode()!=="off"){code.hidden=true;
+    if(isPro()){btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to "+(hasClaude?"Claude":"the AI")+". Nothing is sent before you press it.";}
+    else{btn.textContent="Unlock the deep reading";note.textContent="Part of Pro. Nothing is sent anywhere until you unlock it and press the button. Everything else on this page stays on this device.";}}
+  else if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
   else if(REPORT_ENDPOINT){code.hidden=false;btn.textContent="Unlock the deep reading";note.textContent="Enter your access code. Pressing the button sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else{code.hidden=true;btn.disabled=true;btn.textContent="Opening soon";note.textContent="The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.";}
 }
 async function writeReport(){
   var btn=$("write"),D=current,note=$("writeNote");
   if(!D||D.example){return;}
+  if(acctMode()!=="off"&&!gate("why",function(){writeReport();})){return;}
   var label=btn.textContent;btn.disabled=true;btn.textContent="Reading the conversation. This can take a minute or two.";
   try{
     var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null,res,prompt=buildDeepPrompt(D);
     if(sample){res=await sample(prompt,{modelTier:"complex",cache:false});}
     else if(REPORT_ENDPOINT){
-      var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim()})});
+      var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim(),token:signedIn()?acct.token:null})});
       if(!rr.ok){throw {code:rr.status===402?"code":rr.status===429?"rate_limited":"failed"};}
       res=await rr.json();
     }else{throw {code:"closed"};}
@@ -1800,7 +1862,7 @@ function show(msgs,me){
   if(REPORT_ENDPOINT){$("doneMeta").textContent+=" A short sample goes to the AI to recognise the kind of relationship.";}
   if((!srcA||srcA==="WhatsApp")&&D.msgs.length>=39900&&D.msgs.length<=40100){$("doneMeta").textContent+=" WhatsApp stops an export at 40,000 messages, so the start of this chat may be missing.";}
   if(active>=0&&chats[active]){var cA=chats[active];cA.me=me;cA.chosenType=chosenType;cA.aiType=aiType;try{cA.summary=summarise(D);}catch(e){}saveMap();}
-  renderMap();
+  renderMap();renderAcct();
   $("intake").hidden=true;$("done").hidden=false;
 }
 /* ---------- several chats and the map ---------- */
@@ -1808,7 +1870,7 @@ var chats=[],active=-1,savedMap=[];
 var CAT={romantic:"Partner",married:"Partner",family:"Family",friend:"Friends",client:"Work",work:"Work",other:"Other"};
 var CATC={Partner:"#FF6FAE",Family:"#FF8A4C",Friends:"#3D6BFF",Work:"#14162B",Other:"#9AA0B5"};
 try{savedMap=JSON.parse(localStorage.getItem("wh_map_v2")||"[]")||[];if(!Array.isArray(savedMap)){savedMap=[];}}catch(e){savedMap=[];}
-function saveMap(){try{var keep={},out=[];chats.forEach(function(c){if(c.summary){keep[c.summary.key]=1;out.push(c.summary);}});savedMap.forEach(function(s){if(!keep[s.key]){out.push(s);}});savedMap=out;localStorage.setItem("wh_map_v2",JSON.stringify(out));}catch(e){}}
+function saveMap(){try{var keep={},out=[];chats.forEach(function(c){if(c.summary){keep[c.summary.key]=1;out.push(c.summary);}});savedMap.forEach(function(s){if(!keep[s.key]){out.push(s);}});savedMap=out;localStorage.setItem("wh_map_v2",JSON.stringify(out));}catch(e){}syncUp();}
 function peopleOf(msgs){var count={};msgs.forEach(function(m){count[m.who]=(count[m.who]||0)+1;});return Object.keys(count).sort(function(a,b){return count[b]-count[a];}).slice(0,2);}
 function prepare(D,c){
   var g=guessType(D);D.type=c.chosenType||c.aiType||g.type;D.guess=g;D.silent=silenceOf(D,c.exportAt);D.mode=D.change!=null?"ended":"active";
@@ -1875,7 +1937,7 @@ function openChat(i){
 function mergeMsgs(a,b){var seen={},out=[];a.concat(b).forEach(function(m){var k=m.t.getTime()+"|"+m.who+"|"+m.text;if(!seen[k]){seen[k]=1;out.push(m);}});out.sort(function(x,y){return x.t-y.t;});return out;}
 function toChat(it,pasted){
   var msgs=it.msgs,app=it.src||"WhatsApp";
-  if(msgs.length<(pasted?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted?"Paste more, or upload the full chat.":"Check that the export is complete."):"No messages were recognised. Check that this is a chat exported from WhatsApp, Telegram or Instagram.");}
+  if(msgs.length<(pasted?100:200)){throw new Error(msgs.length?"Only "+msgs.length+" messages were found. That is too few to find a pattern. "+(pasted?"Paste more, or upload the full chat.":"Check that the export is complete."):(pasted?"No messages were recognised. Pasted text needs a name and a time on every message, which WhatsApp and Telegram Desktop include. For other apps, use the file upload.":"No messages were recognised. Check that this is a chat exported from WhatsApp, Telegram or Instagram."));}
   var people=peopleOf(msgs),me=null;
   if(app==="WhatsApp"){me=guessMe(msgs,it.fname);}
   else if(it.owner&&people.indexOf(it.owner)>=0){me=it.owner;}
@@ -1898,16 +1960,25 @@ async function loadMany(files,pasted,keep){
     if(o&&o.src===c.src&&c.src!=="WhatsApp"){o.msgs=mergeMsgs(o.msgs,c.msgs);}
     else if(o){uniq[uniq.indexOf(o)]=c;byKey[c.key]=c;}
     else{byKey[c.key]=c;uniq.push(c);}});
+  /* without an account: one chat is free. More need a free account. */
+  var lockedN=0;
+  if(acctMode()!=="off"&&!signedIn()){
+    var fk=freeKey(),okc=uniq.filter(function(c){return fk?hashKey(c.key)===fk:true;}).slice(0,1);
+    if(!okc.length){pendingLoad={files:files,pasted:pasted,keep:keep};setStatus("Your free chat is used. A free account lets you add as many as you like.",true);gate("chats");return;}
+    lockedN=uniq.length-okc.length;uniq=okc;
+  }
   uniq.forEach(function(c){
     try{analyse(c.msgs,c.me);}catch(e){if(c.many){skipped=skipped||e;}else{errors.push((c.fname?c.fname+": ":"")+(e&&e.message?e.message:"could not be read."));}return;}
     var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}
   });
   if(!added.length){setStatus(errors[0]||(skipped&&skipped.message)||"That file could not be read.",true);return;}
+  if(acctMode()!=="off"&&!signedIn()&&!freeKey()){setFreeKey(hashKey(chats[added[0]].key));}
   var me=commonMe();
   chats.forEach(function(c,k){if(me){c.me=me;}try{c.summary=summarise(prepare(analyse(c.msgs,c.me),c));}catch(e){}});
   if(keep&&active>=0){saveMap();try{openChat(active);}catch(e){}}
   else{try{openChat(added[0]);classifyAI(current);}catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);return;}
     if(added.length>1){setStatus(added.length+" conversations found. Showing the longest. The others are under All your relationships, at the end.");}}
+  if(lockedN>0){pendingLoad={files:files,pasted:pasted,keep:keep};setStatus(lockedN+(lockedN===1?" more conversation was":" more conversations were")+" found. Create a free account to see "+(lockedN===1?"it":"them")+".");}
   if(errors.length){setStatus(added.length+" added. "+errors.length+" could not be read: "+errors[0],true);$("mapNote").textContent=added.length+" added. "+errors.length+" could not be read: "+errors[0];}
   if(keep){$("mapSec").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(window.innerWidth<=820){$("drop").scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
@@ -1922,10 +1993,10 @@ $("file2").addEventListener("change",function(){var f2=$("file2");if(f2.files&&f
 ["dragleave","drop"].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
 document.addEventListener("drop",function(e){var fs=e.dataTransfer&&e.dataTransfer.files;if(fs&&fs.length){loadMany(Array.prototype.slice.call(fs),null,fs.length>1&&active>=0);}});
 $("write").addEventListener("click",writeReport);
-$("mapAdd").addEventListener("click",function(){$("file2").value="";$("file2").click();});
-$("mapClear").addEventListener("click",function(){chats=[];active=-1;savedMap=[];try{localStorage.removeItem("wh_map_v2");}catch(e){}renderMap();});
+$("mapAdd").addEventListener("click",function(){if(!gate("map",function(){$("mapSec").scrollIntoView({behavior:"smooth",block:"start"});})){return;}$("file2").value="";$("file2").click();});
+$("mapClear").addEventListener("click",function(){chats=[];active=-1;savedMap=[];try{localStorage.removeItem("wh_map_v2");}catch(e){}syncUp();renderMap();});
 $("typeFix").addEventListener("click",function(){var r=$("typeRow");r.hidden=!r.hidden;this.setAttribute("aria-expanded",r.hidden?"false":"true");});
-$("moreBtn").addEventListener("click",function(){var w=$("moreWrap"),open=w.hidden;w.hidden=!open;this.setAttribute("aria-expanded",open?"true":"false");this.textContent=open?"Hide the extra analysis":"See more analysis";});
+$("moreBtn").addEventListener("click",function(){var w=$("moreWrap"),open=w.hidden;if(open&&!gate("more",function(){$("moreBtn").click();})){return;}w.hidden=!open;this.setAttribute("aria-expanded",open?"true":"false");this.textContent=open?"Hide the extra analysis":"See more analysis";});
 $("seeBtn").addEventListener("click",function(){$("answer").scrollIntoView({behavior:"smooth",block:"start"});});
 $("again").addEventListener("click",function(){setStatus("");$("done").hidden=true;$("intake").hidden=false;file.value="";$("paste").value="";});
 $("usePaste").addEventListener("click",function(){var t=$("paste").value;if(t.trim().length<50){setStatus("Paste some messages into the box first.",true);return;}load(null,t);});
@@ -1962,6 +2033,139 @@ try{if(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches&&window.
   $("fileHint").textContent="Pick the chat you just saved. The .zip works as it is, no need to open it. It stays on this phone.";
   var tg=document.querySelector(".scene.s3 .target");if(tg){tg.textContent="Choose file";}
 }}catch(e){}
+/* ---------- accounts ----------
+   off:  no relay and no Google ID set. The page behaves as before, nothing is locked.
+   demo: add #demo to the address (or open inside Claude). Same screens, pretend sign in, nothing leaves the page.
+   live: REPORT_ENDPOINT and GOOGLE_CLIENT_ID are set. Real Google sign in, the relay keeps plan and summaries.
+   What each thing needs: "account" (free) or "pro" (paid). Change here to move a feature between tiers. */
+var GATES={chats:"account",more:"account",map:"account",why:"pro"};
+var acct=null,acctNext=null,pendingLoad=null,acctView=null;
+try{acct=JSON.parse(localStorage.getItem("wh_acct_v1")||"null");}catch(e){acct=null;}
+function acctMode(){
+  if(REPORT_ENDPOINT&&GOOGLE_CLIENT_ID){return "live";}
+  var demo=false;try{demo=/demo/i.test(location.hash||"")||!!(window.claude&&window.claude.use);}catch(e){}
+  return demo?"demo":"off";
+}
+function signedIn(){return !!(acct&&acct.user&&acct.mode===acctMode());}
+function isPro(){return signedIn()&&acct.user.plan==="pro";}
+function saveAcct(){try{if(acct){localStorage.setItem("wh_acct_v1",JSON.stringify(acct));}else{localStorage.removeItem("wh_acct_v1");}}catch(e){}}
+function can(what){if(acctMode()==="off"){return true;}var need=GATES[what];return need==="pro"?isPro():need==="account"?signedIn():true;}
+function gate(what,next){if(can(what)){return true;}acctNext=next||null;openAcct(what);return false;}
+function hashKey(s){var x=5381;for(var i=0;i<s.length;i++){x=((x<<5)+x+s.charCodeAt(i))|0;}return (x>>>0).toString(36);}
+function freeKey(){try{return localStorage.getItem("wh_free_v1")||null;}catch(e){return null;}}
+function setFreeKey(k){try{localStorage.setItem("wh_free_v1",k);}catch(e){}}
+async function api(body){
+  var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!rr.ok){var er=new Error("api");er.status=rr.status;throw er;}
+  return rr.json();
+}
+var ACCT_WHY={
+  chats:["Create a free account to add another chat","Your first chat is free without an account. A free account lets you read as many as you like."],
+  more:["Create a free account to see ten more charts","The extra analysis comes with a free account."],
+  map:["Create a free account to compare your relationships","See how you are doing at work, with friends and with family, side by side."],
+  why:["Create a free account first","The deep reading is part of Pro. Sign in, then unlock it."],
+  menu:["Sign in or create a free account","One account for all your relationships."]
+};
+function openAcct(reason){
+  var box=$("acct"),m=acctMode(),ul=$("acctList"),demo=$("acctDemo"),g=$("acctGoogle"),row=$("acctCodeRow");
+  $("acctErr").textContent="";ul.replaceChildren();g.replaceChildren();row.hidden=true;demo.hidden=true;
+  if(!signedIn()){
+    acctView="signin";var w=ACCT_WHY[reason]||ACCT_WHY.menu;
+    $("acctEyebrow").textContent="Free account";$("acctTitle").textContent=w[0];$("acctLead").textContent=w[1];
+    ["As many chats as you like","Ten more charts for every chat","Work, friends and family compared side by side","Your relationships remembered on any device"].forEach(function(t){ul.appendChild(h("li",null,t));});
+    $("acctNote").textContent="One tap with Google. No password and no emails from us. The account keeps your name, your email and a summary of each relationship: names, kind, state and scores. Your messages are never uploaded or stored.";
+    if(m==="live"){showGoogle();}else{demo.hidden=false;demo.textContent="Continue with Google (demo)";$("acctNote").textContent+=" This is a demo: no real account is created.";}
+  }else{
+    acctView="pro";var D=current&&!current.example?current:null;
+    $("acctEyebrow").textContent="Pro";$("acctTitle").textContent=D?whyTitle(D):"Unlock the deep reading";
+    $("acctLead").textContent="The charts say what changed and when. The deep reading says why: a full account written by AI from every chart and a wide selection of your messages.";
+    ["The deep reading for every chat you add","Each side of it, with the messages behind every point","What to take from it"].forEach(function(t){ul.appendChild(h("li",null,t));});
+    if(m==="live"){row.hidden=false;$("acctNote").textContent="Subscriptions open soon. If you have an access code, enter it here.";}
+    else{demo.hidden=false;demo.textContent="Subscribe (demo)";$("acctNote").textContent="This is a demo: nothing is charged.";}
+  }
+  box.hidden=false;try{document.body.style.overflow="hidden";}catch(e){}
+}
+function closeAcct(){$("acct").hidden=true;try{document.body.style.overflow="";}catch(e){}}
+function afterAcct(){
+  closeAcct();renderAcct();
+  if(current&&!current.example){try{fillPro(current,!!(window.claude&&window.claude.use));}catch(e){}}
+  var next=acctNext;acctNext=null;
+  if(pendingLoad&&signedIn()){var p=pendingLoad;pendingLoad=null;loadMany(p.files,p.pasted,p.keep);}
+  if(next){try{next();}catch(e){}}
+}
+function loadGoogle(cb){
+  if(window.google&&window.google.accounts&&window.google.accounts.id){cb();return;}
+  var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=cb;
+  s.onerror=function(){$("acctErr").textContent="Google sign in did not load. Check your connection or ad blocker and try again.";};
+  document.head.appendChild(s);
+}
+function showGoogle(){
+  loadGoogle(function(){
+    try{window.google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogle});
+      window.google.accounts.id.renderButton($("acctGoogle"),{theme:"filled_blue",size:"large",shape:"pill",text:"continue_with",width:280});
+    }catch(e){$("acctErr").textContent="Google sign in did not start. Try again.";}
+  });
+}
+async function onGoogle(resp){
+  try{var r=await api({kind:"auth",credential:resp&&resp.credential});
+    acct={mode:"live",token:r.token,user:r.user};saveAcct();mergeSummaries(r.summaries);afterAcct();
+  }catch(e){$("acctErr").textContent="Sign in did not work. Try again.";}
+}
+function mergeSummaries(items){
+  if(!Array.isArray(items)){return;}
+  var have={};savedMap.forEach(function(s){have[s.key]=1;});chats.forEach(function(c){if(c.summary){have[c.summary.key]=1;}});
+  items.forEach(function(s){if(s&&s.key&&!have[s.key]){savedMap.push(s);have[s.key]=1;}});
+  saveMap();renderMap();
+}
+var syncT=null;
+function syncUp(){
+  if(acctMode()!=="live"||!signedIn()){return;}
+  clearTimeout(syncT);syncT=setTimeout(function(){api({kind:"save",token:acct.token,summaries:savedMap}).catch(function(){});},1500);
+}
+async function refreshAcct(){
+  if(acctMode()!=="live"||!signedIn()){return;}
+  try{var r=await api({kind:"me",token:acct.token});acct.user=r.user;saveAcct();mergeSummaries(r.summaries);renderAcct();if(current&&!current.example){fillPro(current,false);}}
+  catch(e){if(e&&e.status===401){acct=null;saveAcct();renderAcct();}}
+}
+function renderAcct(){
+  var m=acctMode(),chip=$("acctChip");chip.hidden=m==="off";$("acctMenu").hidden=true;
+  var nt=$("nudgeTop"),nm=$("nudgeMore"),D=current&&!current.example?current:null,showN=m!=="off"&&!isPro()&&!!D;
+  nt.hidden=!showN;nm.hidden=!showN;
+  if(showN){var w=whyTitle(D);$("nudgeTopText").textContent=w+" The charts show what changed. The deep reading answers this from the messages themselves.";$("nudgeMoreText").textContent="Ten charts in, the question is still why. "+w;}
+  if(m==="off"){return;}
+  $("acctBtn").textContent=signedIn()?acct.user.name.split(" ")[0]+(isPro()?" · Pro":""):"Sign in";
+}
+function toggleMenu(){
+  if(!signedIn()){openAcct("menu");return;}
+  var mn=$("acctMenu");mn.hidden=!mn.hidden;
+  $("acctWho").textContent=acct.user.name+(acct.user.email?", "+acct.user.email:"")+". "+(isPro()?"Pro.":"Free account.");
+  $("acctUp").hidden=isPro();$("acctDel").textContent="Delete my account";$("acctDel").removeAttribute("data-sure");
+}
+function signOut(){acct=null;saveAcct();renderAcct();if(current&&!current.example){try{fillPro(current,!!(window.claude&&window.claude.use));}catch(e){}}}
+async function deleteAcct(){
+  var b=$("acctDel");
+  if(b.getAttribute("data-sure")!=="1"){b.setAttribute("data-sure","1");b.textContent="Tap again to delete the account and everything stored with it";return;}
+  try{if(acctMode()==="live"){await api({kind:"delete",token:acct.token});}signOut();}
+  catch(e){b.textContent="Could not delete just now. Try again.";b.removeAttribute("data-sure");}
+}
+$("acctBtn").addEventListener("click",toggleMenu);
+$("acctClose").addEventListener("click",function(){acctNext=null;closeAcct();});
+$("acctOut").addEventListener("click",signOut);
+$("acctDel").addEventListener("click",deleteAcct);
+$("acctUp").addEventListener("click",function(){$("acctMenu").hidden=true;openAcct("why");});
+$("acctDemo").addEventListener("click",function(){
+  if(acctMode()!=="demo"){return;}
+  if(acctView==="pro"&&signedIn()){acct.user.plan="pro";}else{acct={mode:"demo",token:"demo",user:{name:"Demo user",email:"",plan:"free"}};}
+  saveAcct();afterAcct();
+});
+$("acctRedeem").addEventListener("click",async function(){
+  var code=String($("acctCode").value||"").trim();if(!code){$("acctErr").textContent="Enter the access code first.";return;}
+  try{var r=await api({kind:"redeem",token:acct.token,code:code});acct.user=r.user;saveAcct();afterAcct();}
+  catch(e){$("acctErr").textContent=e&&e.status===402?"That access code was not recognised. Check it and try again.":e&&e.status===401?"Your sign in has expired. Sign in again.":"That did not work. Try again.";}
+});
+["nudgeTopBtn","nudgeMoreBtn"].forEach(function(id){$(id).addEventListener("click",function(){$("story").scrollIntoView({behavior:"smooth",block:"start"});});});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("acct").hidden){acctNext=null;closeAcct();}});
+renderAcct();refreshAcct();
 /* ---------- enlarge a chart ---------- */
 var zoomBack=null;
 function openZoom(host){
