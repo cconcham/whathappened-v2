@@ -86,6 +86,7 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 .reason .note{font-size:13px;color:var(--muted)}
 .reason .warn{font-size:13px;color:var(--warn)}
 #langNote{color:var(--warn)}
+.langsel{font:600 13px var(--body);border:1px solid color-mix(in srgb,var(--ink) 22%,transparent);border-radius:999px;background:transparent;color:var(--ink);padding:6px 8px;min-height:36px;cursor:pointer}
 .topright{display:flex;align-items:center;gap:16px;position:relative}
 .acctbtn{font:600 15px var(--body);background:none;border:1.5px solid var(--ink);color:var(--ink);border-radius:999px;padding:8px 16px;cursor:pointer;min-height:40px}
 .acctmenu{position:absolute;right:0;top:calc(100% + 16px);background:#fff;border-radius:18px;padding:16px;width:270px;box-shadow:0 20px 50px rgba(20,22,43,.22);display:flex;flex-direction:column;gap:2px;align-items:flex-start;z-index:6}
@@ -421,7 +422,7 @@ h2 .pill{vertical-align:middle;margin-left:8px;font-size:12px}
 
 <header class="top">
   <div class="mark"><svg class="logo" viewBox="0 0 44 40" aria-hidden="true"><path d="M11 3h14a9 9 0 0 1 9 9v5a9 9 0 0 1-9 9H14l-7 6 1.6-7.4A9 9 0 0 1 2 17v-5a9 9 0 0 1 9-9z" fill="#FF8A4C"/><path d="M22 14h11a9 9 0 0 1 9 9v3a9 9 0 0 1-5.6 8.3L38 40l-7-5h-9a9 9 0 0 1-9-9v-3a9 9 0 0 1 9-9z" fill="#FF6FAE" stroke="#fff" stroke-width="2.5"/></svg>WhatHappened</div>
-  <div class="topright" id="topRight"><a href="#drop">Add your chat</a><span id="acctChip" hidden><button class="acctbtn" id="acctBtn" type="button" aria-haspopup="true">Sign in</button></span>
+  <div class="topright" id="topRight"><select id="langSel" class="langsel" aria-label="Language"><option value="en">EN</option><option value="es">ES</option><option value="pt">PT</option><option value="fr">FR</option><option value="de">DE</option><option value="it">IT</option></select><a href="#drop">Add your chat</a><span id="acctChip" hidden><button class="acctbtn" id="acctBtn" type="button" aria-haspopup="true">Sign in</button></span>
     <div class="acctmenu" id="acctMenu" hidden><p class="small muted" id="acctWho"></p><button class="linkbtn" id="acctUp" type="button">Unlock the deep reading</button><button class="linkbtn" id="acctOut" type="button">Sign out</button><button class="linkbtn" id="acctDel" type="button">Delete my account</button></div>
   </div>
 </header>
@@ -939,6 +940,7 @@ function useLangs(ls){
   XL.de=a.indexOf("de")>=0;
 }
 function lx(cat,rx,t){return rx.test(t)||(XL[cat]?XL[cat].test(t):false);}
+function uiLangName(){return LANGN[UI_LANG]||"English";}
 function langOf(D){useLangs(D&&D.lang?D.lang.use:[]);}
 function noWords(D){return !!(D&&D.lang&&!D.lang.ok);}
 var AFFU=/ㅋㅋ|ㅎㅎ|哈哈|呵呵|笑|хаха|ахах|ههه|😅|😆|😁/;
@@ -1614,8 +1616,9 @@ function deepFacts(D){
   f.push("People: "+A+(D.me===0?" (the reader)":"")+" and "+B+".");
   f.push("Chat runs from "+fmtDate(W[0].start)+" to "+fmtDate(D.msgs[D.msgs.length-1].t)+", "+D.msgs.length+" messages: "+A+" "+D.count[0]+", "+B+" "+D.count[1]+".");
   f.push("Kind of relationship (best guess, or chosen by the reader): "+(TYPE_LABEL[D.type]||"unknown")+".");
-  if(D.lang&&D.lang.name&&D.lang.main!=="en"){f.push("Language of the chat: "+D.lang.name+". Write the account in English. Quote messages in their original language and add a short English translation in brackets."+(D.lang.ok?"":" The keyword counts do not work in this language, so rely on the messages themselves for anything about words."));}
+  if(D.lang&&D.lang.name&&D.lang.main!=="en"){f.push("Language of the chat: "+D.lang.name+". Quote messages in their original language and add a short "+uiLangName()+" translation in brackets when the two differ."+(D.lang.ok?"":" The keyword counts do not work in this language, so rely on the messages themselves for anything about words."));}
   f.push(D.mode==="active"?"State: still in regular contact"+(D.silent?", but silent for "+D.silent.days+" days when exported (last message "+fmtDate(D.silent.since)+").":"."):"State: contact "+(D.gradual?"faded gradually from around":"dropped sharply in")+" the week of "+fmtDate(W[D.change].start)+" and stayed low.");
+  f.push("Language to write in: "+uiLangName()+". Write every part of the account in "+uiLangName()+", including the text inside the JSON values. Keep the JSON keys in English.");
   if(D.slow){f.push(D.names[D.slow.p]+"'s typical reply went from "+fmtMin(D.slow.b)+" to "+fmtMin(D.slow.a)+" after the change.");}
   D.signals.forEach(function(s){f.push("Signal: "+s.label+", usual range "+s.range+", "+(s.first==null?"stayed in range":"first outside it in the week of "+fmtDate(W[s.first].start)+" ("+s.value+")")+".");});
   (D.soft||[]).forEach(function(x){f.push("Small drift in the two months before: "+x.t+". "+x.d);});
@@ -1696,7 +1699,7 @@ function fillPro(D,hasClaude){
     if(isPro()){btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to "+(hasClaude?"Claude":"the AI")+". Nothing is sent before you press it.";}
     else{btn.textContent="Unlock the deep reading";note.textContent="Part of Pro. Nothing is sent anywhere until you unlock it and press the button. Everything else on this page stays on this device.";}}
   else if(hasClaude){code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Pressing this sends those messages and the figures to Claude. Nothing is sent before you press it.";}
-  else if(REPORT_ENDPOINT&&friendCode()){code.value=friendCode();code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Free with your friends and family link. Pressing this sends those messages and the figures to the AI. Nothing is sent before you press it.";}
+  else if(reportUrl()&&friendCode()){code.value=friendCode();code.hidden=true;btn.textContent="Write the deep reading";note.textContent="Free with your friends and family link. Pressing this sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else if(REPORT_ENDPOINT){code.hidden=false;btn.textContent="Unlock the deep reading";note.textContent="Enter your access code. Pressing the button sends those messages and the figures to the AI. Nothing is sent before you press it.";}
   else{code.hidden=true;btn.disabled=true;btn.textContent="Opening soon";note.textContent="The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.";}
 }
@@ -1708,8 +1711,8 @@ async function writeReport(){
   try{
     var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null,res,prompt=buildDeepPrompt(D);
     if(sample){res=await sample(prompt,{modelTier:"complex",cache:false});}
-    else if(REPORT_ENDPOINT){
-      var rr=await fetch(REPORT_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim(),token:signedIn()?acct.token:null})});
+    else if(reportUrl()){
+      var rr=await fetch(reportUrl(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,code:String($("proCode").value||"").trim(),token:signedIn()?acct.token:null})});
       if(!rr.ok){throw {code:rr.status===402?"code":rr.status===429?"rate_limited":"failed"};}
       res=await rr.json();
     }else{throw {code:"closed"};}
@@ -2068,6 +2071,7 @@ try{if(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches&&window.
 var GATES={chats:"account",more:"account",map:"account",why:"pro"};
 var acct=null,acctNext=null,pendingLoad=null,acctView=null;
 try{acct=JSON.parse(localStorage.getItem("wh_acct_v1")||"null");}catch(e){acct=null;}
+function reportUrl(){return REPORT_ENDPOINT||((friendCode()||acctMode()==="live")?ACCOUNT_ENDPOINT:"");}
 function friendCode(){
   try{var m=/friends?[=:\-]([A-Za-z0-9_\-]{3,40})/i.exec(location.hash||"");if(m){localStorage.setItem("wh_friend_v1",m[1]);return m[1];}return localStorage.getItem("wh_friend_v1")||null;}catch(e){return null;}
 }
@@ -2232,6 +2236,346 @@ $("fbSend").addEventListener("click",sendFb);
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("fb").hidden){closeFb();}});
 /* ask once, when a reader reaches the end of their own results */
 try{if(window.IntersectionObserver){new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){setTimeout(function(){openFb(true);},1500);}});},{threshold:0.4}).observe($("limits"));}}catch(e){}
+/* ---------- interface languages ----------
+   The page is written in English. This layer swaps the visible text for the reader's language
+   (taken from the browser, or chosen in the menu). Anything without a translation stays in English.
+   Columns: English, Spanish, Portuguese, French, German, Italian. */
+var UI_LANGS=["en","es","pt","fr","de","it"],UI_LANG="en";
+var TRT=[
+["Add your chat","Añade tu chat","Adicione seu chat","Ajoutez votre chat","Chat hinzufügen","Aggiungi la tua chat"],
+["Sign in","Entrar","Entrar","Se connecter","Anmelden","Accedi"],
+["Sign out","Cerrar sesión","Sair","Se déconnecter","Abmelden","Esci"],
+["Delete my account","Eliminar mi cuenta","Excluir minha conta","Supprimer mon compte","Mein Konto löschen","Elimina il mio account"],
+["Unlock the deep reading","Desbloquear la lectura profunda","Desbloquear a leitura profunda","Débloquer la lecture approfondie","Tiefenanalyse freischalten","Sblocca la lettura approfondita"],
+["Write the deep reading","Escribir la lectura profunda","Escrever a leitura profunda","Rédiger la lecture approfondie","Tiefenanalyse schreiben","Scrivi la lettura approfondita"],
+["See the deep reading","Ver la lectura profunda","Ver a leitura profunda","Voir la lecture approfondie","Zur Tiefenanalyse","Vedi la lettura approfondita"],
+["Deep reading","Lectura profunda","Leitura profunda","Lecture approfondie","Tiefenanalyse","Lettura approfondita"],
+["What happened?","¿Qué pasó?","O que aconteceu?","Que s'est-il passé ?","Was ist passiert?","Cos'è successo?"],
+["Add a WhatsApp chat with anyone: a partner, a friend, family, a client, a colleague. See how it is doing, what changed, and why.","Añade un chat de WhatsApp con quien quieras: pareja, amigos, familia, un cliente, un colega. Mira cómo va, qué cambió y por qué.","Adicione um chat do WhatsApp com qualquer pessoa: parceiro, amigo, família, cliente, colega. Veja como está, o que mudou e por quê.","Ajoutez un chat WhatsApp avec n'importe qui : partenaire, ami, famille, client, collègue. Voyez où en est la relation, ce qui a changé et pourquoi.","Füge einen WhatsApp-Chat mit jemandem hinzu: Partner, Freund, Familie, Kunde, Kollege. Sieh, wie es läuft, was sich verändert hat und warum.","Aggiungi una chat WhatsApp con chiunque: partner, amico, famiglia, cliente, collega. Guarda come va, cosa è cambiato e perché."],
+["Paste","Pegar","Colar","Coller","Einfügen","Incolla"],
+["Upload file","Subir archivo","Enviar arquivo","Importer un fichier","Datei hochladen","Carica file"],
+["Best","Mejor","Melhor","Idéal","Am besten","Meglio"],
+["Show me what happened","Muéstrame qué pasó","Mostre o que aconteceu","Montrez-moi ce qui s'est passé","Zeig mir, was passiert ist","Mostrami cos'è successo"],
+["Copy the messages from WhatsApp Web, the WhatsApp desktop app or Telegram Desktop. For the whole story, upload the full chat.","Copia los mensajes desde WhatsApp Web, la app de escritorio de WhatsApp o Telegram Desktop. Para la historia completa, sube el chat entero.","Copie as mensagens do WhatsApp Web, do app de computador do WhatsApp ou do Telegram Desktop. Para a história completa, envie o chat inteiro.","Copiez les messages depuis WhatsApp Web, l'application de bureau WhatsApp ou Telegram Desktop. Pour toute l'histoire, importez le chat complet.","Kopiere die Nachrichten aus WhatsApp Web, der WhatsApp-Desktop-App oder Telegram Desktop. Für die ganze Geschichte lade den vollständigen Chat hoch.","Copia i messaggi da WhatsApp Web, dall'app desktop di WhatsApp o da Telegram Desktop. Per la storia completa, carica la chat intera."],
+["Paste your chat here. WhatsApp or Telegram.","Pega tu chat aquí. WhatsApp o Telegram.","Cole seu chat aqui. WhatsApp ou Telegram.","Collez votre chat ici. WhatsApp ou Telegram.","Chat hier einfügen. WhatsApp oder Telegram.","Incolla qui la tua chat. WhatsApp o Telegram."],
+["Get your whole chat in three taps","Consigue tu chat completo en tres toques","Tenha seu chat inteiro em três toques","Obtenez tout votre chat en trois gestes","Dein ganzer Chat in drei Schritten","La tua chat completa in tre tocchi"],
+["Name","Nombre","Nome","Nom","Name","Nome"],
+["Scroll down","Baja","Role para baixo","Faites défiler","Nach unten scrollen","Scorri in basso"],
+["Three dots","Tres puntos","Três pontos","Trois points","Drei Punkte","Tre puntini"],
+["More","Más","Mais","Plus","Mehr","Altro"],
+["Export chat","Exportar chat","Exportar conversa","Exporter la discussion","Chat exportieren","Esporta chat"],
+["Without media","Sin archivos","Sem mídia","Sans médias","Ohne Medien","Senza media"],
+["Include media","Incluir archivos","Incluir mídia","Inclure les médias","Medien einbeziehen","Includi media"],
+["Open the chat. Tap the name at the top.","Abre el chat. Toca el nombre arriba.","Abra o chat. Toque no nome no topo.","Ouvrez le chat. Touchez le nom en haut.","Öffne den Chat. Tippe oben auf den Namen.","Apri la chat. Tocca il nome in alto."],
+["Open the chat. Tap the three dots.","Abre el chat. Toca los tres puntos.","Abra o chat. Toque nos três pontos.","Ouvrez le chat. Touchez les trois points.","Öffne den Chat. Tippe auf die drei Punkte.","Apri la chat. Tocca i tre puntini."],
+["Tap Export chat, then Without media.","Toca Exportar chat y luego Sin archivos.","Toque em Exportar conversa e depois Sem mídia.","Touchez Exporter la discussion, puis Sans médias.","Tippe auf Chat exportieren, dann Ohne Medien.","Tocca Esporta chat, poi Senza media."],
+["Tap More, Export chat, then Without media.","Toca Más, Exportar chat y luego Sin archivos.","Toque em Mais, Exportar conversa e depois Sem mídia.","Touchez Plus, Exporter la discussion, puis Sans médias.","Tippe auf Mehr, Chat exportieren, dann Ohne Medien.","Tocca Altro, Esporta chat, poi Senza media."],
+["Send it to yourself, then drop it here.","Envíatelo a ti mismo y suéltalo aquí.","Envie para você mesmo e solte aqui.","Envoyez-le-vous, puis déposez-le ici.","Schick ihn dir selbst und zieh ihn hierher.","Invialo a te stesso, poi trascinalo qui."],
+["Tap Save to Files (the sure way), or Copy. Come back here and choose or paste it.","Toca Guardar en Archivos (lo más seguro) o Copiar. Vuelve aquí y elígelo o pégalo.","Toque em Salvar em Arquivos (o mais seguro) ou Copiar. Volte aqui e escolha ou cole.","Touchez Enregistrer dans Fichiers (le plus sûr) ou Copier. Revenez ici et choisissez-le ou collez-le.","Tippe auf In Dateien sichern (am sichersten) oder Kopieren. Komm hierher zurück und wähle die Datei oder füge sie ein.","Tocca Salva su File (il modo sicuro) o Copia. Torna qui e sceglilo o incollalo."],
+["Save it to your phone or to Drive. Come back here and tap Choose your chat file.","Guárdalo en tu teléfono o en Drive. Vuelve aquí y toca Elige tu archivo de chat.","Salve no celular ou no Drive. Volte aqui e toque em Escolha seu arquivo de chat.","Enregistrez-le sur votre téléphone ou sur Drive. Revenez ici et touchez Choisissez votre fichier de chat.","Speichere ihn auf dem Handy oder in Drive. Komm hierher zurück und tippe auf Chat-Datei auswählen.","Salvalo sul telefono o su Drive. Torna qui e tocca Scegli il file della chat."],
+["View contact","Ver contacto","Ver contato","Voir le contact","Kontakt ansehen","Vedi contatto"],
+["Search","Buscar","Buscar","Rechercher","Suchen","Cerca"],
+["Save","Guardar","Salvar","Enregistrer","Sichern","Salva"],
+["Drop here","Suelta aquí","Solte aqui","Déposez ici","Hier ablegen","Trascina qui"],
+["Choose file","Elegir archivo","Escolher arquivo","Choisir un fichier","Datei wählen","Scegli file"],
+["Choose your chat file","Elige tu archivo de chat","Escolha seu arquivo de chat","Choisissez votre fichier de chat","Chat-Datei auswählen","Scegli il file della chat"],
+["Paste the copied file","Pegar el archivo copiado","Colar o arquivo copiado","Coller le fichier copié","Kopierte Datei einfügen","Incolla il file copiato"],
+["If the button does nothing: press and hold here, then tap Paste","Si el botón no hace nada: mantén pulsado aquí y toca Pegar","Se o botão não fizer nada: toque e segure aqui e depois toque em Colar","Si le bouton ne fait rien : appuyez longuement ici, puis touchez Coller","Wenn der Knopf nichts tut: hier gedrückt halten, dann Einfügen tippen","Se il pulsante non fa nulla: tieni premuto qui, poi tocca Incolla"],
+["Or drag it anywhere on this page. The full chat covers the whole relationship, so the answers are more reliable. It stays in this browser tab.","O arrástralo a cualquier parte de esta página. El chat completo cubre toda la relación, así que las respuestas son más fiables. Se queda en esta pestaña del navegador.","Ou arraste para qualquer lugar desta página. O chat completo cobre toda a relação, então as respostas são mais confiáveis. Fica nesta aba do navegador.","Ou faites-le glisser n'importe où sur cette page. Le chat complet couvre toute la relation, donc les réponses sont plus fiables. Il reste dans cet onglet.","Oder zieh ihn irgendwo auf diese Seite. Der ganze Chat deckt die gesamte Beziehung ab, also sind die Antworten verlässlicher. Er bleibt in diesem Browser-Tab.","Oppure trascinalo ovunque in questa pagina. La chat completa copre tutta la relazione, quindi le risposte sono più affidabili. Resta in questa scheda del browser."],
+["Pick the chat you just saved. The .zip works as it is, no need to open it. It stays on this phone.","Elige el chat que acabas de guardar. El .zip sirve tal cual, no hace falta abrirlo. Se queda en este teléfono.","Escolha o chat que você acabou de salvar. O .zip funciona como está, não precisa abrir. Fica neste celular.","Choisissez le chat que vous venez d'enregistrer. Le .zip fonctionne tel quel, inutile de l'ouvrir. Il reste sur ce téléphone.","Wähle den Chat, den du gerade gespeichert hast. Die .zip-Datei funktioniert so, du musst sie nicht öffnen. Sie bleibt auf diesem Handy.","Scegli la chat che hai appena salvato. Lo .zip va bene così, non serve aprirlo. Resta su questo telefono."],
+["Telegram or Instagram instead?","¿Telegram o Instagram?","Telegram ou Instagram?","Plutôt Telegram ou Instagram ?","Lieber Telegram oder Instagram?","Telegram o Instagram?"],
+["On a computer, open Telegram Desktop and the chat. Three dots, Export chat history. Untick photos and other media, set the format to Machine-readable JSON, and add the result.json file here.","En un computador, abre Telegram Desktop y el chat. Tres puntos, Exportar historial del chat. Desmarca fotos y otros archivos, elige el formato JSON legible por máquina y añade aquí el archivo result.json.","No computador, abra o Telegram Desktop e o chat. Três pontos, Exportar histórico do chat. Desmarque fotos e outras mídias, escolha o formato JSON legível por máquina e adicione aqui o arquivo result.json.","Sur un ordinateur, ouvrez Telegram Desktop et le chat. Trois points, Exporter l'historique. Décochez photos et autres médias, choisissez le format JSON lisible par machine et ajoutez ici le fichier result.json.","Öffne am Computer Telegram Desktop und den Chat. Drei Punkte, Chatverlauf exportieren. Fotos und andere Medien abwählen, als Format maschinenlesbares JSON wählen und die Datei result.json hier hinzufügen.","Su un computer, apri Telegram Desktop e la chat. Tre puntini, Esporta cronologia chat. Togli foto e altri media, scegli il formato JSON leggibile da macchina e aggiungi qui il file result.json."],
+["Settings, Accounts Center, Your information and permissions, Export your information. Choose Messages only, format JSON, export to device. Instagram emails you when it is ready, which can take a day or two. Add the zip here. Every conversation with at least 200 messages is read.","Configuración, Centro de cuentas, Tu información y permisos, Exportar tu información. Elige solo Mensajes, formato JSON, exportar al dispositivo. Instagram te avisa por correo cuando está listo, lo que puede tardar uno o dos días. Añade el zip aquí. Se lee cada conversación con al menos 200 mensajes.","Configurações, Central de Contas, Suas informações e permissões, Exportar suas informações. Escolha só Mensagens, formato JSON, exportar para o dispositivo. O Instagram avisa por email quando estiver pronto, o que pode levar um ou dois dias. Adicione o zip aqui. Toda conversa com pelo menos 200 mensagens é lida.","Paramètres, Espace Comptes, Vos informations et autorisations, Exporter vos informations. Choisissez uniquement Messages, format JSON, exporter vers l'appareil. Instagram vous écrit quand c'est prêt, ce qui peut prendre un jour ou deux. Ajoutez le zip ici. Chaque conversation d'au moins 200 messages est lue.","Einstellungen, Kontenübersicht, Deine Informationen und Berechtigungen, Deine Informationen exportieren. Nur Nachrichten wählen, Format JSON, auf das Gerät exportieren. Instagram schreibt dir, wenn es fertig ist, das kann ein bis zwei Tage dauern. Füge die Zip-Datei hier hinzu. Jede Unterhaltung mit mindestens 200 Nachrichten wird gelesen.","Impostazioni, Centro gestione account, Le tue informazioni e autorizzazioni, Esporta le tue informazioni. Scegli solo Messaggi, formato JSON, esporta sul dispositivo. Instagram ti scrive quando è pronto, può volerci un giorno o due. Aggiungi qui lo zip. Viene letta ogni conversazione con almeno 200 messaggi."],
+["Your chat is in","Tu chat está listo","Seu chat entrou","Votre chat est chargé","Dein Chat ist da","La tua chat è dentro"],
+["Which one are you?","¿Cuál eres tú?","Qual é você?","Lequel êtes-vous ?","Wer bist du?","Quale sei tu?"],
+["You are","Tú eres","Você é","Vous êtes","Du bist","Tu sei"],
+["Read as","Leído como","Lido como","Lu comme","Gelesen als","Letta come"],
+["Read by AI as","Leído por la IA como","Lido pela IA como","Lu par l'IA comme","Von der KI gelesen als","Letta dall'IA come"],
+["You set this to","Lo definiste como","Você definiu como","Vous avez choisi","Du hast gewählt","Hai scelto"],
+["Kind of relationship","Tipo de relación","Tipo de relação","Type de relation","Art der Beziehung","Tipo di relazione"],
+["choose one","elige uno","escolha um","choisissez","bitte wählen","scegline uno"],
+["Not right? Change","¿No es así? Cambiar","Não é isso? Mudar","Pas ça ? Modifier","Stimmt nicht? Ändern","Non è così? Cambia"],
+["See what happened","Ver qué pasó","Ver o que aconteceu","Voir ce qui s'est passé","Sehen, was passiert ist","Vedi cos'è successo"],
+["Use another chat","Usar otro chat","Usar outro chat","Utiliser un autre chat","Anderen Chat verwenden","Usa un'altra chat"],
+["Read on this device only.","Leído solo en este dispositivo.","Lido só neste dispositivo.","Lu uniquement sur cet appareil.","Nur auf diesem Gerät gelesen.","Letta solo su questo dispositivo."],
+["Read on this device.","Leído en este dispositivo.","Lido neste dispositivo.","Lu sur cet appareil.","Auf diesem Gerät gelesen.","Letta su questo dispositivo."],
+["Your chat.","Tu chat.","Seu chat.","Votre chat.","Dein Chat.","La tua chat."],
+["Example report.","Informe de ejemplo.","Relatório de exemplo.","Rapport d'exemple.","Beispielbericht.","Report di esempio."],
+["The numbers below come from an invented couple, Alex and Sam. Drop your own chat to replace them.","Los números de abajo son de una pareja inventada, Alex y Sam. Suelta tu propio chat para reemplazarlos.","Os números abaixo são de um casal inventado, Alex e Sam. Solte seu próprio chat para substituí-los.","Les chiffres ci-dessous viennent d'un couple inventé, Alex et Sam. Déposez votre chat pour les remplacer.","Die Zahlen unten stammen von einem erfundenen Paar, Alex und Sam. Zieh deinen eigenen Chat hierher, um sie zu ersetzen.","I numeri qui sotto vengono da una coppia inventata, Alex e Sam. Trascina la tua chat per sostituirli."],
+["romantic relationship","relación de pareja","relação amorosa","relation amoureuse","Liebesbeziehung","relazione sentimentale"],
+["married couple","matrimonio","casal casado","couple marié","Ehepaar","coppia sposata"],
+["family","familia","família","famille","Familie","famiglia"],
+["friend","amistad","amizade","amitié","Freundschaft","amicizia"],
+["client","cliente","cliente","client","Kunde","cliente"],
+["colleagues","colegas","colegas","collègues","Kollegen","colleghi"],
+["something else","otra cosa","outra coisa","autre chose","etwas anderes","altro"],
+["Romantic","Pareja","Amoroso","Amoureux","Liebe","Sentimentale"],
+["Married","Matrimonio","Casados","Mariés","Verheiratet","Sposati"],
+["Family","Familia","Família","Famille","Familie","Famiglia"],
+["Friend","Amistad","Amizade","Amitié","Freundschaft","Amicizia"],
+["Friends","Amigos","Amigos","Amis","Freunde","Amici"],
+["Client","Cliente","Cliente","Client","Kunde","Cliente"],
+["Colleague","Colega","Colega","Collègue","Kollege","Collega"],
+["Something else","Otra cosa","Outra coisa","Autre chose","Etwas anderes","Altro"],
+["Partner","Pareja","Parceiro","Partenaire","Partner","Partner"],
+["Work","Trabajo","Trabalho","Travail","Arbeit","Lavoro"],
+["Other","Otros","Outros","Autres","Andere","Altri"],
+["In short","En resumen","Em resumo","En bref","Kurz gesagt","In breve"],
+["The warmth between you","La calidez entre ustedes","O carinho entre vocês","La chaleur entre vous","Die Wärme zwischen euch","Il calore tra voi"],
+["How close you are","Qué tan cercanos son","O quanto vocês são próximos","Votre proximité","Wie nah ihr euch seid","Quanto siete vicini"],
+["How engaged each of you is","Qué tan involucrado está cada uno","O quanto cada um está envolvido","L'implication de chacun","Wie engagiert jeder von euch ist","Quanto è coinvolto ciascuno"],
+["start","inicio","início","début","Anfang","inizio"],
+["end","fin","fim","fin","Ende","fine"],
+["How is this measured?","¿Cómo se mide esto?","Como isso é medido?","Comment est-ce mesuré ?","Wie wird das gemessen?","Come viene misurato?"],
+["Slide across the chart to feel any week. Tap it to enlarge.","Desliza por el gráfico para ver cualquier semana. Tócalo para ampliarlo.","Deslize pelo gráfico para ver qualquer semana. Toque para ampliar.","Glissez sur le graphique pour voir chaque semaine. Touchez-le pour l'agrandir.","Fahre über das Diagramm, um jede Woche zu sehen. Tippe darauf, um es zu vergrößern.","Scorri sul grafico per vedere ogni settimana. Toccalo per ingrandirlo."],
+["When did it change?","¿Cuándo cambió?","Quando mudou?","Quand cela a-t-il changé ?","Wann hat es sich verändert?","Quando è cambiato?"],
+["Were there signs?","¿Hubo señales?","Houve sinais?","Y avait-il des signes ?","Gab es Anzeichen?","C'erano segnali?"],
+["Why?","¿Por qué?","Por quê?","Pourquoi ?","Warum?","Perché?"],
+["How healthy is it?","¿Qué tan sana está?","Quão saudável está?","Est-elle en bonne santé ?","Wie gesund ist sie?","Quanto è sana?"],
+["What could be better?","¿Qué podría mejorar?","O que poderia melhorar?","Qu'est-ce qui pourrait aller mieux ?","Was könnte besser sein?","Cosa potrebbe andare meglio?"],
+["How close are you?","¿Qué tan cercanos son?","O quanto vocês são próximos?","Êtes-vous proches ?","Wie nah seid ihr euch?","Quanto siete vicini?"],
+["What could bring you closer?","¿Qué podría acercarlos?","O que poderia aproximar vocês?","Qu'est-ce qui pourrait vous rapprocher ?","Was könnte euch näher bringen?","Cosa potrebbe avvicinarvi?"],
+["Where does it stand?","¿En qué punto está?","Em que pé está?","Où en est-elle ?","Wo steht sie?","A che punto è?"],
+["What changed?","¿Qué cambió?","O que mudou?","Qu'est-ce qui a changé ?","Was hat sich verändert?","Cosa è cambiato?"],
+["How strong is the friendship?","¿Qué tan fuerte es la amistad?","Quão forte é a amizade?","L'amitié est-elle solide ?","Wie stark ist die Freundschaft?","Quanto è forte l'amicizia?"],
+["How is it doing?","¿Cómo va?","Como está indo?","Comment va-t-elle ?","Wie läuft es?","Come sta andando?"],
+["How engaged is the client?","¿Qué tan involucrado está el cliente?","O quanto o cliente está envolvido?","Le client est-il impliqué ?","Wie engagiert ist der Kunde?","Quanto è coinvolto il cliente?"],
+["What needs attention?","¿Qué necesita atención?","O que precisa de atenção?","Qu'est-ce qui demande de l'attention ?","Was braucht Aufmerksamkeit?","Cosa richiede attenzione?"],
+["What were the warnings?","¿Cuáles fueron los avisos?","Quais foram os avisos?","Quels étaient les avertissements ?","Was waren die Warnzeichen?","Quali erano gli avvisi?"],
+["How well do you work together?","¿Qué tan bien trabajan juntos?","Quão bem vocês trabalham juntos?","Travaillez-vous bien ensemble ?","Wie gut arbeitet ihr zusammen?","Quanto lavorate bene insieme?"],
+["What could be smoother?","¿Qué podría fluir mejor?","O que poderia fluir melhor?","Qu'est-ce qui pourrait être plus fluide ?","Was könnte runder laufen?","Cosa potrebbe filare meglio?"],
+["Why the breakup?","¿Por qué la ruptura?","Por que o término?","Pourquoi la rupture ?","Warum die Trennung?","Perché la rottura?"],
+["Why the separation?","¿Por qué la separación?","Por que a separação?","Pourquoi la séparation ?","Warum die Trennung?","Perché la separazione?"],
+["What makes it work, and what could be even better?","¿Qué hace que funcione, y qué podría ser aún mejor?","O que faz dar certo, e o que poderia ser ainda melhor?","Qu'est-ce qui fait que ça marche, et qu'est-ce qui pourrait être encore mieux ?","Was lässt es funktionieren, und was könnte noch besser sein?","Cosa la fa funzionare, e cosa potrebbe essere ancora meglio?"],
+["What makes this friendship valuable, and what could be even better?","¿Qué hace valiosa esta amistad, y qué podría ser aún mejor?","O que torna essa amizade valiosa, e o que poderia ser ainda melhor?","Qu'est-ce qui rend cette amitié précieuse, et qu'est-ce qui pourrait être encore mieux ?","Was macht diese Freundschaft wertvoll, und was könnte noch besser sein?","Cosa rende preziosa questa amicizia, e cosa potrebbe essere ancora meglio?"],
+["What makes this work well, and what could be smoother?","¿Qué hace que esto funcione bien, y qué podría fluir mejor?","O que faz isso funcionar bem, e o que poderia fluir melhor?","Qu'est-ce qui fait que ça marche bien, et qu'est-ce qui pourrait être plus fluide ?","Was lässt das gut funktionieren, und was könnte runder laufen?","Cosa fa funzionare bene questo rapporto, e cosa potrebbe filare meglio?"],
+["What is valuable here, and what could be even better?","¿Qué es valioso aquí, y qué podría ser aún mejor?","O que é valioso aqui, e o que poderia ser ainda melhor?","Qu'est-ce qui est précieux ici, et qu'est-ce qui pourrait être encore mieux ?","Was ist hier wertvoll, und was könnte noch besser sein?","Cosa c'è di prezioso qui, e cosa potrebbe essere ancora meglio?"],
+["How much you talked","Cuánto hablaron","Quanto vocês conversaram","Combien vous avez parlé","Wie viel ihr geschrieben habt","Quanto vi siete scritti"],
+["Messages each of you sent, week by week. The dashed line is the week it changed.","Mensajes que envió cada uno, semana a semana. La línea punteada es la semana en que cambió.","Mensagens que cada um enviou, semana a semana. A linha tracejada é a semana em que mudou.","Messages envoyés par chacun, semaine après semaine. La ligne pointillée est la semaine du changement.","Nachrichten von jedem von euch, Woche für Woche. Die gestrichelte Linie ist die Woche der Veränderung.","Messaggi inviati da ciascuno, settimana per settimana. La linea tratteggiata è la settimana del cambiamento."],
+["How long replies took","Cuánto tardaban las respuestas","Quanto as respostas demoravam","Le temps de réponse","Wie lange Antworten dauerten","Quanto ci volevano le risposte"],
+["Typical minutes before each of you answered. Lower means quicker.","Minutos típicos antes de que cada uno respondiera. Más bajo es más rápido.","Minutos típicos até cada um responder. Mais baixo é mais rápido.","Minutes habituelles avant chaque réponse. Plus bas veut dire plus rapide.","Typische Minuten bis zur Antwort. Niedriger heißt schneller.","Minuti tipici prima di ogni risposta. Più basso vuol dire più veloce."],
+["The last weeks compared with how things usually were between you, counted from the timings in the chat.","Las últimas semanas comparadas con cómo solían ser las cosas entre ustedes, contadas a partir de los tiempos del chat.","As últimas semanas comparadas com como as coisas costumavam ser entre vocês, contadas pelos horários do chat.","Les dernières semaines comparées à vos habitudes, calculées à partir des horaires du chat.","Die letzten Wochen verglichen mit dem, wie es sonst zwischen euch war, gezählt aus den Zeiten im Chat.","Le ultime settimane confrontate con come andavano di solito le cose tra voi, contate dagli orari della chat."],
+["What the chat shows about how the two of you talk lately.","Lo que el chat muestra sobre cómo se hablan últimamente.","O que o chat mostra sobre como vocês conversam ultimamente.","Ce que le chat montre de votre façon de vous parler ces derniers temps.","Was der Chat darüber zeigt, wie ihr in letzter Zeit miteinander schreibt.","Cosa mostra la chat su come vi parlate ultimamente."],
+["The charts say what changed and when. Why is a different question, and the honest answer is in the messages themselves.","Los gráficos dicen qué cambió y cuándo. El porqué es otra pregunta, y la respuesta honesta está en los propios mensajes.","Os gráficos dizem o que mudou e quando. O porquê é outra pergunta, e a resposta honesta está nas próprias mensagens.","Les graphiques disent ce qui a changé et quand. Le pourquoi est une autre question, et la réponse honnête se trouve dans les messages eux-mêmes.","Die Diagramme zeigen, was sich wann verändert hat. Das Warum ist eine andere Frage, und die ehrliche Antwort steht in den Nachrichten selbst.","I grafici dicono cosa è cambiato e quando. Il perché è un'altra domanda, e la risposta onesta sta nei messaggi stessi."],
+["An example of the deep reading you can unlock for your own chat.","Un ejemplo de la lectura profunda que puedes desbloquear para tu propio chat.","Um exemplo da leitura profunda que você pode desbloquear para o seu chat.","Un exemple de la lecture approfondie que vous pouvez débloquer pour votre chat.","Ein Beispiel der Tiefenanalyse, die du für deinen eigenen Chat freischalten kannst.","Un esempio della lettura approfondita che puoi sbloccare per la tua chat."],
+["Part of Pro. Nothing is sent anywhere until you unlock it and press the button. Everything else on this page stays on this device.","Parte de Pro. No se envía nada a ningún lado hasta que lo desbloquees y pulses el botón. Todo lo demás de esta página se queda en este dispositivo.","Parte do Pro. Nada é enviado a lugar nenhum até você desbloquear e apertar o botão. Todo o resto desta página fica neste dispositivo.","Inclus dans Pro. Rien n'est envoyé tant que vous ne l'avez pas débloqué et appuyé sur le bouton. Tout le reste de cette page reste sur cet appareil.","Teil von Pro. Nichts wird gesendet, bis du es freischaltest und den Knopf drückst. Alles andere auf dieser Seite bleibt auf diesem Gerät.","Parte di Pro. Non viene inviato nulla finché non lo sblocchi e premi il pulsante. Tutto il resto di questa pagina resta su questo dispositivo."],
+["Opening soon","Abre pronto","Abre em breve","Bientôt disponible","Bald verfügbar","In arrivo"],
+["The deep reading is a paid feature and is not open yet. Everything else on this page is free and stays on this device.","La lectura profunda es de pago y aún no está abierta. Todo lo demás de esta página es gratis y se queda en este dispositivo.","A leitura profunda é paga e ainda não está aberta. Todo o resto desta página é grátis e fica neste dispositivo.","La lecture approfondie est payante et n'est pas encore ouverte. Tout le reste de cette page est gratuit et reste sur cet appareil.","Die Tiefenanalyse ist kostenpflichtig und noch nicht geöffnet. Alles andere auf dieser Seite ist gratis und bleibt auf diesem Gerät.","La lettura approfondita è a pagamento e non è ancora aperta. Tutto il resto di questa pagina è gratis e resta su questo dispositivo."],
+["Reading the conversation. This can take a minute or two.","Leyendo la conversación. Puede tardar uno o dos minutos.","Lendo a conversa. Pode levar um ou dois minutos.","Lecture de la conversation. Cela peut prendre une minute ou deux.","Die Unterhaltung wird gelesen. Das kann ein bis zwei Minuten dauern.","Sto leggendo la conversazione. Può volerci un minuto o due."],
+["The measures behind it","Las medidas que lo explican","As medidas por trás","Les mesures derrière","Die Messwerte dahinter","Le misure dietro"],
+["Each measure runs from 0 to 100 and comes straight from the timings and words in the chat. Together they make up the overall reading.","Cada medida va de 0 a 100 y sale directamente de los tiempos y las palabras del chat. Juntas forman la lectura general.","Cada medida vai de 0 a 100 e vem direto dos horários e das palavras do chat. Juntas formam a leitura geral.","Chaque mesure va de 0 à 100 et vient directement des horaires et des mots du chat. Ensemble, elles forment la lecture globale.","Jeder Messwert reicht von 0 bis 100 und stammt direkt aus den Zeiten und Wörtern im Chat. Zusammen ergeben sie das Gesamtbild.","Ogni misura va da 0 a 100 e viene direttamente dagli orari e dalle parole della chat. Insieme formano la lettura complessiva."],
+["More analysis","Más análisis","Mais análise","Plus d'analyse","Mehr Analyse","Altre analisi"],
+["Ten more ways to read the same chat, for when you want to go further.","Diez formas más de leer el mismo chat, para cuando quieras ir más lejos.","Mais dez formas de ler o mesmo chat, para quando você quiser ir além.","Dix autres façons de lire le même chat, pour aller plus loin.","Zehn weitere Blickwinkel auf denselben Chat, wenn du tiefer gehen willst.","Altri dieci modi di leggere la stessa chat, per andare più a fondo."],
+["See more analysis","Ver más análisis","Ver mais análise","Voir plus d'analyse","Mehr Analyse ansehen","Vedi altre analisi"],
+["Hide the extra analysis","Ocultar el análisis extra","Ocultar a análise extra","Masquer l'analyse supplémentaire","Zusatzanalyse ausblenden","Nascondi le analisi extra"],
+["The colours stay the same in every chart, and the dashed line is the week it changed.","Los colores son los mismos en todos los gráficos, y la línea punteada es la semana en que cambió.","As cores são as mesmas em todos os gráficos, e a linha tracejada é a semana em que mudou.","Les couleurs restent les mêmes dans chaque graphique, et la ligne pointillée est la semaine du changement.","Die Farben bleiben in jedem Diagramm gleich, und die gestrichelte Linie ist die Woche der Veränderung.","I colori restano gli stessi in ogni grafico, e la linea tratteggiata è la settimana del cambiamento."],
+["All your relationships","Todas tus relaciones","Todas as suas relações","Toutes vos relations","Alle deine Beziehungen","Tutte le tue relazioni"],
+["Free account","Cuenta gratis","Conta grátis","Compte gratuit","Kostenloses Konto","Account gratuito"],
+["How are you doing at work, with friends, with family?","¿Cómo te va en el trabajo, con los amigos, con la familia?","Como você está no trabalho, com os amigos, com a família?","Comment ça va au travail, avec vos amis, en famille ?","Wie läuft es bei der Arbeit, mit Freunden, mit der Familie?","Come va al lavoro, con gli amici, in famiglia?"],
+["Each reading above is about two people. Add more of your chats here to see them side by side and compare by kind of relationship.","Cada lectura de arriba trata de dos personas. Añade aquí más chats para verlos lado a lado y comparar por tipo de relación.","Cada leitura acima é sobre duas pessoas. Adicione mais chats aqui para vê-los lado a lado e comparar por tipo de relação.","Chaque lecture ci-dessus concerne deux personnes. Ajoutez d'autres chats ici pour les voir côte à côte et comparer par type de relation.","Jede Auswertung oben betrifft zwei Personen. Füge hier weitere Chats hinzu, um sie nebeneinander zu sehen und nach Art der Beziehung zu vergleichen.","Ogni lettura qui sopra riguarda due persone. Aggiungi qui altre chat per vederle fianco a fianco e confrontarle per tipo di relazione."],
+["Add relationships","Añadir relaciones","Adicionar relações","Ajouter des relations","Beziehungen hinzufügen","Aggiungi relazioni"],
+["Clear the list","Borrar la lista","Limpar a lista","Vider la liste","Liste leeren","Svuota la lista"],
+["Choose several exported chats at once. A summary of each is remembered in this browser: names, type, state and scores. No messages are stored.","Elige varios chats exportados a la vez. Se recuerda un resumen de cada uno en este navegador: nombres, tipo, estado y puntajes. No se guarda ningún mensaje.","Escolha vários chats exportados de uma vez. Um resumo de cada um fica guardado neste navegador: nomes, tipo, estado e pontuações. Nenhuma mensagem é armazenada.","Choisissez plusieurs chats exportés à la fois. Un résumé de chacun est gardé dans ce navigateur : noms, type, état et scores. Aucun message n'est stocké.","Wähle mehrere exportierte Chats auf einmal. Von jedem wird eine Zusammenfassung in diesem Browser gemerkt: Namen, Art, Zustand und Werte. Es werden keine Nachrichten gespeichert.","Scegli più chat esportate insieme. Di ognuna viene ricordato un riepilogo in questo browser: nomi, tipo, stato e punteggi. Nessun messaggio viene salvato."],
+["Open","Abrir","Abrir","Ouvrir","Öffnen","Apri"],
+["Showing","Mostrando","Mostrando","Affiché","Angezeigt","In vista"],
+["Remove","Quitar","Remover","Retirer","Entfernen","Rimuovi"],
+["Add again to open","Añádelo otra vez para abrirlo","Adicione de novo para abrir","Ajoutez-le à nouveau pour l'ouvrir","Zum Öffnen erneut hinzufügen","Aggiungila di nuovo per aprirla"],
+["Coming next","Lo que viene","O que vem a seguir","À venir","Als Nächstes","In arrivo"],
+["More of the picture, beyond the chat.","Más del panorama, más allá del chat.","Mais do quadro, além do chat.","Une vue plus large, au-delà du chat.","Mehr vom Gesamtbild, über den Chat hinaus.","Più quadro d'insieme, oltre la chat."],
+["Photo dates and places","Fechas y lugares de fotos","Datas e locais de fotos","Dates et lieux des photos","Fotodaten und Orte","Date e luoghi delle foto"],
+["Calls and calendar","Llamadas y calendario","Ligações e calendário","Appels et agenda","Anrufe und Kalender","Chiamate e calendario"],
+["What this can and cannot tell you","Lo que esto puede y no puede decirte","O que isto pode e não pode dizer","Ce que cela peut et ne peut pas vous dire","Was das hier sagen kann und was nicht","Cosa può e non può dirti"],
+["It describes the past. It does not predict.","Describe el pasado. No predice.","Descreve o passado. Não prevê.","Cela décrit le passé. Cela ne prédit rien.","Es beschreibt die Vergangenheit. Es sagt nichts voraus.","Descrive il passato. Non prevede."],
+["Research on couples' messages finds that balance, responsiveness and matching style go with relationships that last. Those are averages over many couples. For one relationship, the chat explains what changed and when far better than it forecasts anything.","La investigación sobre mensajes de parejas encuentra que el equilibrio, la rapidez al responder y un estilo parecido acompañan a las relaciones que duran. Son promedios de muchas parejas. Para una sola relación, el chat explica qué cambió y cuándo mucho mejor de lo que predice nada.","Pesquisas sobre mensagens de casais mostram que equilíbrio, rapidez nas respostas e estilo parecido acompanham relações que duram. São médias de muitos casais. Para uma relação só, o chat explica o que mudou e quando muito melhor do que prevê qualquer coisa.","Les recherches sur les messages de couples montrent que l'équilibre, la réactivité et un style proche accompagnent les relations qui durent. Ce sont des moyennes sur de nombreux couples. Pour une seule relation, le chat explique ce qui a changé et quand bien mieux qu'il ne prédit quoi que ce soit.","Forschung zu Paarnachrichten zeigt, dass Ausgewogenheit, schnelles Antworten und ähnlicher Stil mit Beziehungen einhergehen, die halten. Das sind Durchschnitte über viele Paare. Für eine einzelne Beziehung erklärt der Chat viel besser, was sich wann verändert hat, als dass er etwas vorhersagt.","La ricerca sui messaggi di coppia mostra che equilibrio, prontezza nel rispondere e stile simile accompagnano le relazioni che durano. Sono medie su molte coppie. Per una singola relazione, la chat spiega cosa è cambiato e quando molto meglio di quanto preveda qualcosa."],
+["A chat cannot prove a reason.","Un chat no puede probar un motivo.","Um chat não pode provar um motivo.","Un chat ne peut pas prouver une raison.","Ein Chat kann keinen Grund beweisen.","Una chat non può provare un motivo."],
+["Half of a relationship happens in person and on calls. A theme with a high score means it shows up often in the messages. It is never proof, and for infidelity in particular a chat on its own cannot confirm or rule it out.","La mitad de una relación ocurre en persona y por llamadas. Un tema con puntaje alto significa que aparece mucho en los mensajes. Nunca es una prueba, y en el caso de la infidelidad un chat por sí solo no puede confirmarla ni descartarla.","Metade de uma relação acontece pessoalmente e por ligações. Um tema com pontuação alta significa que aparece muito nas mensagens. Nunca é prova, e no caso de infidelidade um chat sozinho não pode confirmar nem descartar.","La moitié d'une relation se passe en personne et au téléphone. Un thème avec un score élevé signifie qu'il revient souvent dans les messages. Ce n'est jamais une preuve, et pour l'infidélité en particulier un chat seul ne peut ni la confirmer ni l'exclure.","Die Hälfte einer Beziehung findet persönlich und am Telefon statt. Ein Thema mit hohem Wert bedeutet, dass es oft in den Nachrichten vorkommt. Es ist nie ein Beweis, und gerade Untreue kann ein Chat allein weder bestätigen noch ausschließen.","Metà di una relazione avviene di persona e al telefono. Un tema con punteggio alto significa che compare spesso nei messaggi. Non è mai una prova, e per l'infedeltà in particolare una chat da sola non può confermarla né escluderla."],
+["Which apps and languages does it read?","¿Qué apps e idiomas lee?","Quais apps e idiomas ele lê?","Quelles applications et quelles langues lit-il ?","Welche Apps und Sprachen liest es?","Quali app e lingue legge?"],
+["WhatsApp, Telegram and Instagram exports. Everything counted from timings works in any language. The parts that read words know English, Spanish, Portuguese, French, German and Italian. For other languages those parts are left out instead of guessed.","Exportaciones de WhatsApp, Telegram e Instagram. Todo lo que se cuenta a partir de los tiempos funciona en cualquier idioma. Las partes que leen palabras entienden inglés, español, portugués, francés, alemán e italiano. En otros idiomas esas partes se omiten en vez de adivinarse.","Exportações do WhatsApp, Telegram e Instagram. Tudo o que é contado pelos horários funciona em qualquer idioma. As partes que leem palavras entendem inglês, espanhol, português, francês, alemão e italiano. Em outros idiomas essas partes ficam de fora em vez de serem adivinhadas.","Les exports WhatsApp, Telegram et Instagram. Tout ce qui est calculé à partir des horaires fonctionne dans toutes les langues. Les parties qui lisent les mots comprennent l'anglais, l'espagnol, le portugais, le français, l'allemand et l'italien. Pour les autres langues, ces parties sont omises plutôt que devinées.","Exporte aus WhatsApp, Telegram und Instagram. Alles, was aus Zeiten gezählt wird, funktioniert in jeder Sprache. Die Teile, die Wörter lesen, verstehen Englisch, Spanisch, Portugiesisch, Französisch, Deutsch und Italienisch. Bei anderen Sprachen werden diese Teile weggelassen statt geraten.","Esportazioni da WhatsApp, Telegram e Instagram. Tutto ciò che si conta dagli orari funziona in qualsiasi lingua. Le parti che leggono le parole capiscono inglese, spagnolo, portoghese, francese, tedesco e italiano. Per le altre lingue quelle parti vengono omesse invece che indovinate."],
+["The other person is in this file too.","La otra persona también está en este archivo.","A outra pessoa também está neste arquivo.","L'autre personne est aussi dans ce fichier.","Die andere Person steckt auch in dieser Datei.","Anche l'altra persona è in questo file."],
+["The export holds someone else's private messages. Keep the report to yourself, and do not use it to confront, monitor or expose them.","La exportación contiene mensajes privados de otra persona. Guarda el informe para ti y no lo uses para confrontarla, vigilarla ni exponerla.","A exportação contém mensagens privadas de outra pessoa. Guarde o relatório para você e não o use para confrontar, vigiar ou expor essa pessoa.","L'export contient les messages privés de quelqu'un d'autre. Gardez le rapport pour vous et ne l'utilisez pas pour confronter, surveiller ou exposer cette personne.","Der Export enthält private Nachrichten einer anderen Person. Behalte den Bericht für dich und nutze ihn nicht, um sie zur Rede zu stellen, zu überwachen oder bloßzustellen.","L'esportazione contiene i messaggi privati di un'altra persona. Tieni il report per te e non usarlo per affrontarla, controllarla o esporla."],
+["WhatHappened is a prototype. It is not counselling or advice. If a breakup is weighing on you heavily, talking to someone you trust or a professional will help more than a chart.","WhatHappened es un prototipo. No es terapia ni consejo. Si una ruptura te pesa mucho, hablar con alguien de confianza o con un profesional te ayudará más que un gráfico.","WhatHappened é um protótipo. Não é terapia nem aconselhamento. Se um término está pesando muito, conversar com alguém de confiança ou com um profissional vai ajudar mais do que um gráfico.","WhatHappened est un prototype. Ce n'est ni une thérapie ni un conseil. Si une rupture vous pèse beaucoup, parler à une personne de confiance ou à un professionnel aidera plus qu'un graphique.","WhatHappened ist ein Prototyp. Es ist keine Beratung. Wenn dich eine Trennung stark belastet, hilft ein Gespräch mit einer Vertrauensperson oder einer Fachperson mehr als ein Diagramm.","WhatHappened è un prototipo. Non è consulenza né un consiglio. Se una rottura ti pesa molto, parlare con qualcuno di cui ti fidi o con un professionista aiuta più di un grafico."],
+["Give feedback","Dar tu opinión","Dar sua opinião","Donner votre avis","Feedback geben","Lascia un feedback"],
+["Close","Cerrar","Fechar","Fermer","Schließen","Chiudi"],
+["Feedback","Opinión","Opinião","Avis","Feedback","Feedback"],
+["Was this useful?","¿Te sirvió?","Isto foi útil?","Était-ce utile ?","War das hilfreich?","È stato utile?"],
+["1 is not at all. 5 is very.","1 es nada. 5 es mucho.","1 é nada. 5 é muito.","1 : pas du tout. 5 : beaucoup.","1 heißt gar nicht. 5 heißt sehr.","1 è per niente. 5 è molto."],
+["Did it read the relationship right?","¿Leyó bien la relación?","Leu bem a relação?","La relation a-t-elle été bien lue ?","Wurde die Beziehung richtig gelesen?","Ha letto bene la relazione?"],
+["Yes","Sí","Sim","Oui","Ja","Sì"],
+["Partly","En parte","Em parte","En partie","Teilweise","In parte"],
+["No","No","Não","Non","Nein","No"],
+["What was missing, wrong or confusing? What would make you use it again?","¿Qué faltó, qué estuvo mal o confuso? ¿Qué te haría volver a usarlo?","O que faltou, estava errado ou confuso? O que faria você usar de novo?","Qu'est-ce qui manquait, était faux ou confus ? Qu'est-ce qui vous ferait revenir ?","Was hat gefehlt, war falsch oder verwirrend? Was würde dich wiederkommen lassen?","Cosa mancava, era sbagliato o confuso? Cosa ti farebbe usarlo di nuovo?"],
+["Send feedback","Enviar opinión","Enviar opinião","Envoyer","Feedback senden","Invia feedback"],
+["Sending ...","Enviando ...","Enviando ...","Envoi ...","Wird gesendet ...","Invio ..."],
+["Sent","Enviado","Enviado","Envoyé","Gesendet","Inviato"],
+["Thank you. That helps.","Gracias. Eso ayuda.","Obrigado. Isso ajuda.","Merci. Cela nous aide.","Danke. Das hilft.","Grazie. Questo aiuta."],
+["Pick a rating or write a line first.","Elige una nota o escribe una línea primero.","Escolha uma nota ou escreva uma linha primeiro.","Choisissez une note ou écrivez une ligne d'abord.","Wähle zuerst eine Bewertung oder schreib eine Zeile.","Scegli prima un voto o scrivi una riga."],
+["Could not send just now. Try again.","No se pudo enviar ahora. Inténtalo de nuevo.","Não foi possível enviar agora. Tente de novo.","Envoi impossible pour l'instant. Réessayez.","Senden gerade nicht möglich. Versuch es noch einmal.","Impossibile inviare ora. Riprova."],
+["This sends your rating and comment, plus the kind of relationship and the chat's language. No names and no messages.","Esto envía tu nota y tu comentario, más el tipo de relación y el idioma del chat. Sin nombres ni mensajes.","Isto envia sua nota e seu comentário, mais o tipo de relação e o idioma do chat. Sem nomes e sem mensagens.","Cela envoie votre note et votre commentaire, ainsi que le type de relation et la langue du chat. Ni noms ni messages.","Gesendet werden deine Bewertung und dein Kommentar sowie die Art der Beziehung und die Sprache des Chats. Keine Namen, keine Nachrichten.","Vengono inviati il tuo voto e il tuo commento, più il tipo di relazione e la lingua della chat. Niente nomi e niente messaggi."],
+["Sign in or create a free account","Entra o crea una cuenta gratis","Entre ou crie uma conta grátis","Connectez-vous ou créez un compte gratuit","Anmelden oder kostenloses Konto erstellen","Accedi o crea un account gratuito"],
+["One account for all your relationships.","Una cuenta para todas tus relaciones.","Uma conta para todas as suas relações.","Un seul compte pour toutes vos relations.","Ein Konto für alle deine Beziehungen.","Un account per tutte le tue relazioni."],
+["Create a free account to add another chat","Crea una cuenta gratis para añadir otro chat","Crie uma conta grátis para adicionar outro chat","Créez un compte gratuit pour ajouter un autre chat","Erstelle ein kostenloses Konto, um einen weiteren Chat hinzuzufügen","Crea un account gratuito per aggiungere un'altra chat"],
+["Your first chat is free without an account. A free account lets you read as many as you like.","Tu primer chat es gratis sin cuenta. Con una cuenta gratis puedes leer todos los que quieras.","Seu primeiro chat é grátis sem conta. Com uma conta grátis você lê quantos quiser.","Votre premier chat est gratuit sans compte. Un compte gratuit vous permet d'en lire autant que vous voulez.","Dein erster Chat ist ohne Konto gratis. Mit einem kostenlosen Konto kannst du so viele lesen, wie du willst.","La tua prima chat è gratis senza account. Con un account gratuito ne leggi quante vuoi."],
+["Create a free account to see ten more charts","Crea una cuenta gratis para ver diez gráficos más","Crie uma conta grátis para ver mais dez gráficos","Créez un compte gratuit pour voir dix graphiques de plus","Erstelle ein kostenloses Konto für zehn weitere Diagramme","Crea un account gratuito per vedere altri dieci grafici"],
+["The extra analysis comes with a free account.","El análisis extra viene con una cuenta gratis.","A análise extra vem com uma conta grátis.","L'analyse supplémentaire est incluse dans le compte gratuit.","Die Zusatzanalyse gibt es mit einem kostenlosen Konto.","Le analisi extra sono incluse nell'account gratuito."],
+["Create a free account to compare your relationships","Crea una cuenta gratis para comparar tus relaciones","Crie uma conta grátis para comparar suas relações","Créez un compte gratuit pour comparer vos relations","Erstelle ein kostenloses Konto, um deine Beziehungen zu vergleichen","Crea un account gratuito per confrontare le tue relazioni"],
+["See how you are doing at work, with friends and with family, side by side.","Mira cómo te va en el trabajo, con amigos y con la familia, lado a lado.","Veja como você está no trabalho, com amigos e com a família, lado a lado.","Voyez où vous en êtes au travail, avec vos amis et en famille, côte à côte.","Sieh nebeneinander, wie es bei der Arbeit, mit Freunden und mit der Familie läuft.","Guarda come va al lavoro, con gli amici e in famiglia, fianco a fianco."],
+["Create a free account first","Primero crea una cuenta gratis","Primeiro crie uma conta grátis","Créez d'abord un compte gratuit","Erstelle zuerst ein kostenloses Konto","Prima crea un account gratuito"],
+["The deep reading is part of Pro. Sign in, then unlock it.","La lectura profunda es parte de Pro. Entra y luego desbloquéala.","A leitura profunda faz parte do Pro. Entre e depois desbloqueie.","La lecture approfondie fait partie de Pro. Connectez-vous, puis débloquez-la.","Die Tiefenanalyse gehört zu Pro. Melde dich an und schalte sie dann frei.","La lettura approfondita fa parte di Pro. Accedi, poi sbloccala."],
+["As many chats as you like","Todos los chats que quieras","Quantos chats você quiser","Autant de chats que vous voulez","So viele Chats, wie du willst","Tutte le chat che vuoi"],
+["Ten more charts for every chat","Diez gráficos más para cada chat","Mais dez gráficos para cada chat","Dix graphiques de plus pour chaque chat","Zehn weitere Diagramme für jeden Chat","Altri dieci grafici per ogni chat"],
+["Work, friends and family compared side by side","Trabajo, amigos y familia comparados lado a lado","Trabalho, amigos e família comparados lado a lado","Travail, amis et famille comparés côte à côte","Arbeit, Freunde und Familie im direkten Vergleich","Lavoro, amici e famiglia confrontati fianco a fianco"],
+["Your relationships remembered on any device","Tus relaciones recordadas en cualquier dispositivo","Suas relações lembradas em qualquer dispositivo","Vos relations retrouvées sur n'importe quel appareil","Deine Beziehungen auf jedem Gerät gemerkt","Le tue relazioni ricordate su qualsiasi dispositivo"],
+["One tap with Google. No password and no emails from us. The account keeps your name, your email and a summary of each relationship: names, kind, state and scores. Your messages are never uploaded or stored.","Un toque con Google. Sin contraseña y sin correos nuestros. La cuenta guarda tu nombre, tu correo y un resumen de cada relación: nombres, tipo, estado y puntajes. Tus mensajes nunca se suben ni se guardan.","Um toque com o Google. Sem senha e sem emails nossos. A conta guarda seu nome, seu email e um resumo de cada relação: nomes, tipo, estado e pontuações. Suas mensagens nunca são enviadas nem armazenadas.","Un geste avec Google. Pas de mot de passe et aucun e-mail de notre part. Le compte garde votre nom, votre e-mail et un résumé de chaque relation : noms, type, état et scores. Vos messages ne sont jamais envoyés ni stockés.","Ein Tipp mit Google. Kein Passwort und keine E-Mails von uns. Das Konto speichert deinen Namen, deine E-Mail und eine Zusammenfassung jeder Beziehung: Namen, Art, Zustand und Werte. Deine Nachrichten werden nie hochgeladen oder gespeichert.","Un tocco con Google. Niente password e nessuna email da parte nostra. L'account conserva il tuo nome, la tua email e un riepilogo di ogni relazione: nomi, tipo, stato e punteggi. I tuoi messaggi non vengono mai caricati né salvati."],
+["The charts say what changed and when. The deep reading says why: a full account written by AI from every chart and a wide selection of your messages.","Los gráficos dicen qué cambió y cuándo. La lectura profunda dice por qué: un relato completo escrito por IA a partir de cada gráfico y una amplia selección de tus mensajes.","Os gráficos dizem o que mudou e quando. A leitura profunda diz por quê: um relato completo escrito por IA a partir de cada gráfico e de uma ampla seleção das suas mensagens.","Les graphiques disent ce qui a changé et quand. La lecture approfondie dit pourquoi : un récit complet écrit par l'IA à partir de chaque graphique et d'une large sélection de vos messages.","Die Diagramme zeigen, was sich wann verändert hat. Die Tiefenanalyse sagt, warum: ein vollständiger Bericht, von KI geschrieben aus allen Diagrammen und einer breiten Auswahl deiner Nachrichten.","I grafici dicono cosa è cambiato e quando. La lettura approfondita dice perché: un resoconto completo scritto dall'IA a partire da ogni grafico e da un'ampia selezione dei tuoi messaggi."],
+["The deep reading for every chat you add","La lectura profunda para cada chat que añadas","A leitura profunda para cada chat que você adicionar","La lecture approfondie pour chaque chat ajouté","Die Tiefenanalyse für jeden Chat, den du hinzufügst","La lettura approfondita per ogni chat che aggiungi"],
+["Each side of it, with the messages behind every point","Cada lado de la historia, con los mensajes detrás de cada punto","Cada lado da história, com as mensagens por trás de cada ponto","Chaque point de vue, avec les messages derrière chaque élément","Beide Seiten, mit den Nachrichten hinter jedem Punkt","Ogni lato della storia, con i messaggi dietro ogni punto"],
+["What to take from it","Qué sacar de esto","O que tirar disso","Ce qu'il faut en retenir","Was du daraus mitnehmen kannst","Cosa portarsi a casa"],
+["Subscriptions open soon. If you have an access code, enter it here.","Las suscripciones abren pronto. Si tienes un código de acceso, ingrésalo aquí.","As assinaturas abrem em breve. Se você tem um código de acesso, digite aqui.","Les abonnements ouvrent bientôt. Si vous avez un code d'accès, saisissez-le ici.","Abos starten bald. Wenn du einen Zugangscode hast, gib ihn hier ein.","Gli abbonamenti aprono presto. Se hai un codice di accesso, inseriscilo qui."],
+["Access code","Código de acceso","Código de acesso","Code d'accès","Zugangscode","Codice di accesso"],
+["Unlock","Desbloquear","Desbloquear","Débloquer","Freischalten","Sblocca"],
+["Your free chat is used. A free account lets you add as many as you like.","Ya usaste tu chat gratis. Con una cuenta gratis puedes añadir todos los que quieras.","Você já usou seu chat grátis. Com uma conta grátis você adiciona quantos quiser.","Votre chat gratuit est utilisé. Un compte gratuit vous permet d'en ajouter autant que vous voulez.","Dein Gratis-Chat ist verbraucht. Mit einem kostenlosen Konto kannst du beliebig viele hinzufügen.","Hai già usato la chat gratuita. Con un account gratuito ne aggiungi quante vuoi."],
+["Could be better","Podría mejorar","Poderia melhorar","Peut mieux faire","Könnte besser sein","Potrebbe andare meglio"],
+["Working well","Funciona bien","Funciona bem","Fonctionne bien","Läuft gut","Funziona bene"],
+["When it changed","Cuándo cambió","Quando mudou","Le moment du changement","Wann es sich änderte","Quando è cambiato"],
+["When contact dropped","Cuándo cayó el contacto","Quando o contato caiu","Quand le contact a chuté","Wann der Kontakt abbrach","Quando il contatto è calato"],
+["When they went quiet","Cuándo dejaron de escribir","Quando pararam de escrever","Quand ils ont cessé d'écrire","Wann sie verstummten","Quando hanno smesso di scrivere"],
+["Earliest sign","Primera señal","Primeiro sinal","Premier signe","Erstes Anzeichen","Primo segnale"],
+["Who slowed down","Quién bajó el ritmo","Quem diminuiu o ritmo","Qui a ralenti","Wer langsamer wurde","Chi ha rallentato"],
+["No clear difference","Sin diferencia clara","Sem diferença clara","Pas de différence nette","Kein klarer Unterschied","Nessuna differenza chiara"],
+["None before the change","Ninguna antes del cambio","Nenhum antes da mudança","Aucun avant le changement","Keines vor der Veränderung","Nessuno prima del cambiamento"],
+["Last message","Último mensaje","Última mensagem","Dernier message","Letzte Nachricht","Ultimo messaggio"],
+["How it looks","Cómo se ve","Como está","Vue d'ensemble","Wie es aussieht","Come appare"],
+["In touch","En contacto","Em contato","En contact","In Kontakt","In contatto"],
+["Typical reply","Respuesta típica","Resposta típica","Réponse habituelle","Typische Antwort","Risposta tipica"],
+["Messages read","Mensajes leídos","Mensagens lidas","Messages lus","Gelesene Nachrichten","Messaggi letti"],
+["Over the last six months of the chat.","En los últimos seis meses del chat.","Nos últimos seis meses do chat.","Sur les six derniers mois du chat.","In den letzten sechs Monaten des Chats.","Negli ultimi sei mesi della chat."],
+["Good mornings and good nights","Buenos días y buenas noches","Bom dia e boa noite","Bonjours et bonnes nuits","Guten Morgen und gute Nacht","Buongiorno e buonanotte"],
+["Longest silence","Silencio más largo","Maior silêncio","Plus long silence","Längste Funkstille","Silenzio più lungo"],
+["Plans suggested","Planes propuestos","Planos sugeridos","Sorties proposées","Vorgeschlagene Treffen","Piani proposti"],
+["Outside working hours","Fuera del horario laboral","Fora do horário de trabalho","Hors des heures de travail","Außerhalb der Arbeitszeit","Fuori dall'orario di lavoro"],
+["Logistics or affection","Logística o cariño","Logística ou carinho","Logistique ou affection","Organisation oder Zuneigung","Logistica o affetto"],
+["Strong","Fuerte","Forte","Solide","Stark","Forte"],
+["Healthy","Sana","Saudável","Saine","Gesund","Sana"],
+["Mixed","Mixta","Mista","Mitigée","Gemischt","Mista"],
+["Strained","Tensa","Tensa","Tendue","Angespannt","Tesa"],
+["Work and career","Trabajo y carrera","Trabalho e carreira","Travail et carrière","Arbeit und Karriere","Lavoro e carriera"],
+["Time and logistics","Tiempo y logística","Tempo e logística","Temps et logistique","Zeit und Organisation","Tempo e logistica"],
+["Communication and conflict","Comunicación y conflicto","Comunicação e conflito","Communication et conflit","Kommunikation und Konflikt","Comunicazione e conflitto"],
+["Different futures","Futuros distintos","Futuros diferentes","Des avenirs différents","Unterschiedliche Zukunftspläne","Futuri diversi"],
+["Money","Dinero","Dinheiro","Argent","Geld","Soldi"],
+["Routine and boredom","Rutina y aburrimiento","Rotina e tédio","Routine et ennui","Routine und Langeweile","Routine e noia"],
+["Someone else","Otra persona","Outra pessoa","Quelqu'un d'autre","Jemand anderes","Qualcun altro"],
+["A chat can raise or lower the odds. It cannot confirm this or rule it out.","Un chat puede subir o bajar las probabilidades. No puede confirmarlo ni descartarlo.","Um chat pode aumentar ou diminuir as chances. Não pode confirmar nem descartar isso.","Un chat peut augmenter ou réduire la probabilité. Il ne peut ni le confirmer ni l'exclure.","Ein Chat kann die Wahrscheinlichkeit erhöhen oder senken. Bestätigen oder ausschließen kann er es nicht.","Una chat può alzare o abbassare le probabilità. Non può confermarlo né escluderlo."],
+["Nothing stands out as a problem. The basics are in good shape.","Nada destaca como problema. Lo básico está en buen estado.","Nada se destaca como problema. O básico está em boa forma.","Rien ne ressort comme un problème. Les bases sont solides.","Nichts fällt als Problem auf. Die Grundlagen sind in Ordnung.","Niente spicca come problema. Le basi sono in buona forma."],
+["One thing stands out.","Destaca una cosa.","Uma coisa se destaca.","Une chose ressort.","Eine Sache fällt auf.","Spicca una cosa."],
+["A chat cannot show calls, time together, or anything felt and not written.","Un chat no puede mostrar llamadas, tiempo juntos, ni nada que se sintió y no se escribió.","Um chat não mostra ligações, tempo juntos, nem nada que foi sentido e não escrito.","Un chat ne montre ni les appels, ni le temps passé ensemble, ni ce qui a été ressenti sans être écrit.","Ein Chat zeigt keine Anrufe, keine gemeinsame Zeit und nichts, was gefühlt, aber nicht geschrieben wurde.","Una chat non mostra le chiamate, il tempo insieme, né ciò che si è provato senza scriverlo."],
+["Written by AI from the charts above and a wide selection of your messages.","Escrito por IA a partir de los gráficos de arriba y una amplia selección de tus mensajes.","Escrito por IA a partir dos gráficos acima e de uma ampla seleção das suas mensagens.","Écrit par l'IA à partir des graphiques ci-dessus et d'une large sélection de vos messages.","Von KI geschrieben, aus den Diagrammen oben und einer breiten Auswahl deiner Nachrichten.","Scritto dall'IA a partire dai grafici qui sopra e da un'ampia selezione dei tuoi messaggi."],
+["No messages were recognised. Check that this is a chat exported from WhatsApp, Telegram or Instagram.","No se reconoció ningún mensaje. Revisa que sea un chat exportado de WhatsApp, Telegram o Instagram.","Nenhuma mensagem foi reconhecida. Confira se é um chat exportado do WhatsApp, Telegram ou Instagram.","Aucun message reconnu. Vérifiez qu'il s'agit d'un chat exporté de WhatsApp, Telegram ou Instagram.","Es wurden keine Nachrichten erkannt. Prüfe, ob es ein Export aus WhatsApp, Telegram oder Instagram ist.","Nessun messaggio riconosciuto. Controlla che sia una chat esportata da WhatsApp, Telegram o Instagram."],
+["No messages were recognised. Pasted text needs a name and a time on every message, which WhatsApp and Telegram Desktop include. For other apps, use the file upload.","No se reconoció ningún mensaje. El texto pegado necesita un nombre y una hora en cada mensaje, algo que WhatsApp y Telegram Desktop incluyen. Para otras apps, sube el archivo.","Nenhuma mensagem foi reconhecida. O texto colado precisa de nome e hora em cada mensagem, o que o WhatsApp e o Telegram Desktop incluem. Para outros apps, envie o arquivo.","Aucun message reconnu. Le texte collé doit comporter un nom et une heure à chaque message, ce que WhatsApp et Telegram Desktop incluent. Pour les autres applications, importez le fichier.","Es wurden keine Nachrichten erkannt. Eingefügter Text braucht bei jeder Nachricht einen Namen und eine Uhrzeit, wie bei WhatsApp und Telegram Desktop. Für andere Apps nutze den Datei-Upload.","Nessun messaggio riconosciuto. Il testo incollato deve avere nome e ora in ogni messaggio, come fanno WhatsApp e Telegram Desktop. Per le altre app, carica il file."],
+["This looks like a group chat. WhatHappened compares two people, so export a chat between just the two of you.","Esto parece un chat grupal. WhatHappened compara a dos personas, así que exporta un chat solo entre ustedes dos.","Isto parece um chat em grupo. O WhatHappened compara duas pessoas, então exporte um chat só entre vocês dois.","Cela ressemble à un chat de groupe. WhatHappened compare deux personnes : exportez un chat entre vous deux seulement.","Das sieht nach einem Gruppenchat aus. WhatHappened vergleicht zwei Personen, exportiere also einen Chat nur zwischen euch beiden.","Sembra una chat di gruppo. WhatHappened confronta due persone, quindi esporta una chat solo tra voi due."],
+["This chat covers less than ten weeks, which is too short to find a pattern.","Este chat cubre menos de diez semanas, muy poco para encontrar un patrón.","Este chat cobre menos de dez semanas, pouco para encontrar um padrão.","Ce chat couvre moins de dix semaines, trop peu pour trouver une tendance.","Dieser Chat umfasst weniger als zehn Wochen, das ist zu kurz für ein Muster.","Questa chat copre meno di dieci settimane, troppo poco per trovare uno schema."],
+["Paste some messages into the box first.","Primero pega algunos mensajes en el cuadro.","Primeiro cole algumas mensagens na caixa.","Collez d'abord des messages dans la zone.","Füge zuerst ein paar Nachrichten in das Feld ein.","Prima incolla dei messaggi nel riquadro."],
+["Reading the pasted text ...","Leyendo el texto pegado ...","Lendo o texto colado ...","Lecture du texte collé ...","Eingefügter Text wird gelesen ...","Sto leggendo il testo incollato ..."]
+];
+/* Sentences with names, dates or numbers inside. $1, $2 ... are kept as they are. */
+var TRR=[
+["^What stopped working with (.+)\\?$","¿Qué dejó de funcionar con $1?","O que deixou de funcionar com $1?","Qu'est-ce qui a cessé de fonctionner avec $1 ?","Was hat mit $1 nicht mehr funktioniert?","Cosa ha smesso di funzionare con $1?"],
+["^What came between you and (.+)\\?$","¿Qué se interpuso entre tú y $1?","O que se meteu entre você e $1?","Qu'est-ce qui s'est mis entre vous et $1 ?","Was ist zwischen dich und $1 gekommen?","Cosa si è messo tra te e $1?"],
+["^Why did contact with (.+) drop\\?$","¿Por qué cayó el contacto con $1?","Por que o contato com $1 caiu?","Pourquoi le contact avec $1 a-t-il chuté ?","Warum ist der Kontakt zu $1 abgebrochen?","Perché il contatto con $1 è calato?"],
+["^Why did (.+) go quiet\\?$","¿Por qué $1 dejó de escribir?","Por que $1 parou de escrever?","Pourquoi $1 a-t-il cessé d'écrire ?","Warum hat $1 aufgehört zu schreiben?","Perché $1 ha smesso di scrivere?"],
+["^What changed with (.+)\\?$","¿Qué cambió con $1?","O que mudou com $1?","Qu'est-ce qui a changé avec $1 ?","Was hat sich mit $1 verändert?","Cosa è cambiato con $1?"],
+["^Why the silence with (.+)\\?$","¿Por qué el silencio con $1?","Por que o silêncio com $1?","Pourquoi ce silence avec $1 ?","Warum die Funkstille mit $1?","Perché il silenzio con $1?"],
+["^What is holding (.+) back\\?$","¿Qué está frenando a $1?","O que está segurando $1?","Qu'est-ce qui retient $1 ?","Was hält $1 zurück?","Cosa sta frenando $1?"],
+["^What's not working with (.+)\\?$","¿Qué no está funcionando con $1?","O que não está funcionando com $1?","Qu'est-ce qui ne fonctionne pas avec $1 ?","Was läuft mit $1 nicht?","Cosa non funziona con $1?"],
+["^What keeps you and (.+) close, and what could bring you closer\\?$","¿Qué los mantiene cerca a ti y a $1, y qué podría acercarlos más?","O que mantém você e $1 próximos, e o que poderia aproximar mais?","Qu'est-ce qui vous garde proches, vous et $1, et qu'est-ce qui pourrait vous rapprocher ?","Was hält dich und $1 nah, und was könnte euch näher bringen?","Cosa tiene vicini te e $1, e cosa potrebbe avvicinarvi di più?"],
+["^What keeps (.+) engaged, and what would strengthen it\\?$","¿Qué mantiene a $1 involucrado, y qué lo reforzaría?","O que mantém $1 envolvido, e o que fortaleceria isso?","Qu'est-ce qui garde $1 impliqué, et qu'est-ce qui renforcerait ce lien ?","Was hält $1 bei der Stange, und was würde es stärken?","Cosa mantiene $1 coinvolto, e cosa lo rafforzerebbe?"],
+["^([\\d.,\\s]+) messages, (.+) to (.+)\\.$","$1 mensajes, del $2 al $3.","$1 mensagens, de $2 a $3.","$1 messages, du $2 au $3.","$1 Nachrichten, $2 bis $3.","$1 messaggi, dal $2 al $3."],
+["^From (Telegram|Instagram)\\.$","Desde $1.","Do $1.","Depuis $1.","Aus $1.","Da $1."],
+["^Week of (.+)$","Semana del $1","Semana de $1","Semaine du $1","Woche vom $1","Settimana del $1"],
+["^([^\\s,.:;?!]+) and ([^\\s,.:;?!]+)$","$1 y $2","$1 e $2","$1 et $2","$1 und $2","$1 e $2"],
+["^(.+) and (.+), (\\d.+) to (\\d.+)\\.$","$1 y $2, del $3 al $4.","$1 e $2, de $3 a $4.","$1 et $2, du $3 au $4.","$1 und $2, $3 bis $4.","$1 e $2, dal $3 al $4."],
+["^([\\d.]+) days a week$","$1 días a la semana","$1 dias por semana","$1 jours par semaine","$1 Tage pro Woche","$1 giorni a settimana"],
+["^(\\d+) days?$","$1 días","$1 dias","$1 jours","$1 Tage","$1 giorni"],
+["^(\\d+)% of days$","$1% de los días","$1% dos dias","$1 % des jours","$1 % der Tage","$1% dei giorni"],
+["^([\\d.]+) a month$","$1 al mes","$1 por mês","$1 par mois","$1 pro Monat","$1 al mese"],
+["^Overall (\\d+) out of 100, from the measures below\\.$","En total $1 de 100, según las medidas de abajo.","No geral $1 de 100, pelas medidas abaixo.","Au total $1 sur 100, d'après les mesures ci-dessous.","Insgesamt $1 von 100, aus den Messwerten unten.","In totale $1 su 100, dalle misure qui sotto."],
+["^(\\d+) days of silence by the time this chat was exported\\.$","$1 días de silencio cuando se exportó este chat.","$1 dias de silêncio quando este chat foi exportado.","$1 jours de silence au moment de l'export.","$1 Tage Funkstille, als dieser Chat exportiert wurde.","$1 giorni di silenzio quando questa chat è stata esportata."],
+["^That is the main thing to notice\\.$","Eso es lo principal que hay que notar.","Isso é o principal a notar.","C'est le point principal à retenir.","Das ist das Wichtigste.","È la cosa principale da notare."],
+["^(.+) first, then (.+)\\.$","Primero $1, luego $2.","Primeiro $1, depois $2.","D'abord $1, puis $2.","Zuerst $1, dann $2.","Prima $1, poi $2."],
+["^No messages since (.+)\\.$","Sin mensajes desde el $1.","Sem mensagens desde $1.","Aucun message depuis le $1.","Keine Nachrichten seit $1.","Nessun messaggio dal $1."],
+["^(\\d+) things stand out\\.$","Destacan $1 cosas.","$1 coisas se destacam.","$1 choses ressortent.","$1 Dinge fallen auf.","Spiccano $1 cose."],
+["^(\\d+) conversations found\\. Showing the longest\\. The others are under All your relationships, at the end\\.$","Se encontraron $1 conversaciones. Se muestra la más larga. Las demás están en Todas tus relaciones, al final.","$1 conversas encontradas. Mostrando a mais longa. As outras estão em Todas as suas relações, no fim.","$1 conversations trouvées. La plus longue est affichée. Les autres sont dans Toutes vos relations, à la fin.","$1 Unterhaltungen gefunden. Die längste wird angezeigt. Die anderen stehen am Ende unter Alle deine Beziehungen.","Trovate $1 conversazioni. Si mostra la più lunga. Le altre sono in Tutte le tue relazioni, in fondo."],
+["^Reading (.+) \\.\\.\\.$","Leyendo $1 ...","Lendo $1 ...","Lecture de $1 ...","$1 wird gelesen ...","Sto leggendo $1 ..."]
+];
+var TRMON={es:["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],pt:["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"],fr:["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."],de:["Jan.","Feb.","März","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],it:["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"]};
+var TRX_=null,TRRX_=null;
+function trBuild(){
+  var k=UI_LANGS.indexOf(UI_LANG);TRX_={};TRRX_=[];if(k<1){return;}
+  TRT.forEach(function(r){if(r[k]){TRX_[r[0]]=r[k];}});
+  TRR.forEach(function(r){if(r[k]){try{TRRX_.push([new RegExp(r[0]),r[k]]);}catch(e){}}});
+}
+function trOne(s){
+  var x=TRX_[s];if(x){return x;}
+  for(var i=0;i<TRRX_.length;i++){if(TRRX_[i][0].test(s)){return s.replace(TRRX_[i][0],TRRX_[i][1]);}}
+  return null;
+}
+function trText(s){
+  if(UI_LANG==="en"||!s){return s;}
+  var m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s),core=m[2];if(!core||core.length>900||!/[A-Za-z]{2}/.test(core)){return s;}
+  var out=trOne(core),n=/^(\d\. )(.+)$/.exec(core);
+  if(!out&&n){var r=trOne(n[2]);if(r){out=n[1]+r;}}
+  if(!out){var parts=core.match(/[^.?!]+[.?!]+(?=\s|$)|[^.?!]+$/g),hit=false;
+    if(parts&&parts.length>1){var res=parts.map(function(p){var t=p.trim(),q=trOne(t);if(q){hit=true;return q;}return t;});if(hit){out=res.join(" ");}}}
+  if(!out){out=core;}
+  var mon=TRMON[UI_LANG];
+  if(mon){out=out.replace(/\b(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})\b/g,function(a,d,mo,y){return d+" "+mon[MON.indexOf(mo)]+" "+y;});}
+  return out===core?s:m[1]+out+m[3];
+}
+var trBusy=false;
+function trNode(n){
+  if(n.nodeType===3){
+    var p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TEXTAREA|OPTION)$/.test(p.nodeName)){return;}
+    var cur=n.nodeValue;if(n.__out===cur&&n.__lang===UI_LANG){return;}
+    if(n.__out!==cur){n.__en=cur;}
+    var t=trText(n.__en);n.__lang=UI_LANG;n.__out=t;if(t!==cur){n.nodeValue=t;}
+  }else if(n.nodeType===1){
+    if(/^(SCRIPT|STYLE)$/.test(n.nodeName)||n.id==="langSel"){return;}
+    ["placeholder","aria-label","data-ph"].forEach(function(a){
+      if(!n.hasAttribute||!n.hasAttribute(a)){return;}
+      var cur=n.getAttribute(a),key="__a_"+a;if(n[key+"o"]!==cur){n[key]=cur;}
+      var t=trText(n[key]);n[key+"o"]=t;if(t!==cur){n.setAttribute(a,t);}
+    });
+    for(var c=n.firstChild;c;c=c.nextSibling){trNode(c);}
+  }
+}
+function trAll(){if(trBusy){return;}trBusy=true;try{trNode(document.body);}catch(e){}trBusy=false;}
+function setLang(l,save){
+  if(UI_LANGS.indexOf(l)<0){l="en";}
+  UI_LANG=l;trBuild();
+  try{document.documentElement.setAttribute("lang",l);if(save){localStorage.setItem("wh_lang",l);}}catch(e){}
+  try{$("langSel").value=l;}catch(e){}
+  trAll();
+}
+(function(){
+  try{
+    if(!document.body||!window.MutationObserver||!document.documentElement){return;}
+    var saved=null;try{saved=localStorage.getItem("wh_lang");}catch(e){}
+    var pick=saved;
+    if(!pick){var ls=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||"en"]);for(var i=0;i<ls.length&&!pick;i++){var c=String(ls[i]).slice(0,2).toLowerCase();if(UI_LANGS.indexOf(c)>=0){pick=c;}}}
+    $("langSel").addEventListener("change",function(){setLang(this.value,true);});
+    setLang(pick||"en",false);
+    new MutationObserver(function(ms){
+      if(UI_LANG==="en"||trBusy){return;}
+      trBusy=true;
+      try{ms.forEach(function(m){
+        if(m.type==="characterData"){trNode(m.target);}
+        else if(m.type==="attributes"){trNode(m.target);}
+        else{for(var i=0;i<m.addedNodes.length;i++){trNode(m.addedNodes[i]);}}
+      });}catch(e){}
+      trBusy=false;
+    }).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["placeholder","aria-label","data-ph"]});
+  }catch(e){}
+})();
 /* ---------- enlarge a chart ---------- */
 var zoomBack=null;
 function openZoom(host){
