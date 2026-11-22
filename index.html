@@ -1706,6 +1706,8 @@ async function writeReport(){
   var btn=$("write"),D=current,note=$("writeNote");
   if(!D||D.example){return;}
   if(acctMode()!=="off"&&!gate("why",function(){writeReport();})){return;}
+  var viaFriend=!!friendCode()&&!isPro();
+  if(viaFriend&&friendReads()>=FRIEND_MAX){note.textContent="This link includes "+FRIEND_MAX+" deep readings and you have used them.";return;}
   var label=btn.textContent;btn.disabled=true;btn.textContent="Reading the conversation. This can take a minute or two.";
   try{
     var sample=(window.claude&&window.claude.use)?await window.claude.use("sample"):null,res,prompt=buildDeepPrompt(D);
@@ -1717,6 +1719,7 @@ async function writeReport(){
     }else{throw {code:"closed"};}
     var j=parseJson(res.text||"");
     if(current!==D){return;}
+    if(viaFriend){friendReadDone();}
     renderDeep(j,D);$("storyCard").hidden=false;$("proCard").hidden=true;
     $("storyHint").textContent="Written by AI from the charts above and a wide selection of your messages.";
     if(D.mode==="ended"&&(D.type==="romantic"||D.type==="married")&&Array.isArray(j.reasons)&&j.reasons.length){
@@ -1996,18 +1999,26 @@ async function loadMany(files,pasted,keep){
     if(!okc.length){pendingLoad={files:files,pasted:pasted,keep:keep};setStatus("Your free chat is used. A free account lets you add as many as you like.",true);gate("chats");return;}
     lockedN=uniq.length-okc.length;uniq=okc;
   }
+  var frBlocked=0;
+  if(friendCode()&&!isPro()){
+    var fl=friendList(),room=FRIEND_MAX-fl.length;
+    uniq=uniq.filter(function(c){var hk=hashKey(c.key);if(fl.indexOf(hk)>=0){return true;}if(room>0){room--;return true;}frBlocked++;return false;});
+    if(!uniq.length){setStatus("This link covers "+FRIEND_MAX+" relationships and you have used them. You can still open those again.",true);return;}
+  }
   uniq.forEach(function(c){
     try{analyse(c.msgs,c.me);}catch(e){if(c.many){skipped=skipped||e;}else{errors.push((c.fname?c.fname+": ":"")+(e&&e.message?e.message:"could not be read."));}return;}
     var at=-1;chats.forEach(function(o,k){if(o.key===c.key){at=k;}});if(at>=0){chats[at]=c;added.push(at);}else{chats.push(c);added.push(chats.length-1);}
   });
   if(!added.length){setStatus(errors[0]||(skipped&&skipped.message)||"That file could not be read.",true);return;}
   if(acctMode()!=="off"&&!signedIn()&&!friendCode()&&!freeKey()){setFreeKey(hashKey(chats[added[0]].key));}
+  if(friendCode()&&!isPro()){added.forEach(function(ix){friendAdd(hashKey(chats[ix].key));});}
   var me=commonMe();
   chats.forEach(function(c,k){if(me){c.me=me;}try{c.summary=summarise(prepare(analyse(c.msgs,c.me),c));}catch(e){}});
   if(keep&&active>=0){saveMap();try{openChat(active);}catch(e){}}
   else{try{openChat(added[0]);classifyAI(current);}catch(e){setStatus(e&&e.message?e.message:"That file could not be read.",true);return;}
     if(added.length>1){setStatus(added.length+" conversations found. Showing the longest. The others are under All your relationships, at the end.");}}
   if(lockedN>0){pendingLoad={files:files,pasted:pasted,keep:keep};setStatus(lockedN+(lockedN===1?" more conversation was":" more conversations were")+" found. Create a free account to see "+(lockedN===1?"it":"them")+".");}
+  if(frBlocked>0){setStatus("This link covers "+FRIEND_MAX+" relationships. "+frBlocked+(frBlocked===1?" chat was":" chats were")+" left out.",true);}
   if(errors.length){setStatus(added.length+" added. "+errors.length+" could not be read: "+errors[0],true);$("mapNote").textContent=added.length+" added. "+errors.length+" could not be read: "+errors[0];}
   if(keep){$("mapSec").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(window.innerWidth<=820){$("drop").scrollIntoView({behavior:"smooth",block:"start"});}else{window.scrollTo({top:0,behavior:"smooth"});}
@@ -2070,6 +2081,12 @@ try{if(window.matchMedia&&window.matchMedia("(pointer:coarse)").matches&&window.
 var GATES={chats:"account",more:"account",map:"account",why:"pro"};
 var acct=null,acctNext=null,pendingLoad=null,acctView=null;
 try{acct=JSON.parse(localStorage.getItem("wh_acct_v1")||"null");}catch(e){acct=null;}
+/* friends link: at most 3 relationships and 3 deep readings per browser */
+var FRIEND_MAX=3;
+function friendList(){try{var a=JSON.parse(localStorage.getItem("wh_fr_v1")||"[]");return Array.isArray(a)?a:[];}catch(e){return [];}}
+function friendAdd(k){try{var a=friendList();if(a.indexOf(k)<0&&a.length<FRIEND_MAX){a.push(k);localStorage.setItem("wh_fr_v1",JSON.stringify(a));}}catch(e){}}
+function friendReads(){try{return +localStorage.getItem("wh_frw_v1")||0;}catch(e){return 0;}}
+function friendReadDone(){try{localStorage.setItem("wh_frw_v1",String(friendReads()+1));}catch(e){}}
 function reportUrl(){return REPORT_ENDPOINT||((friendCode()||acctMode()==="live")?ACCOUNT_ENDPOINT:"");}
 function friendCode(){
   try{var m=/friends?[=:\-]([A-Za-z0-9_\-]{3,40})/i.exec(location.hash||"");if(m){localStorage.setItem("wh_friend_v1",m[1]);return m[1];}return localStorage.getItem("wh_friend_v1")||null;}catch(e){return null;}
