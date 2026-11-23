@@ -302,9 +302,7 @@ export default {
       /* pass on the provider's own status and message so a wrong key or model name is easy to spot */
       let detail = "";
       try { const e = await upstream.json(); const x = Array.isArray(e) ? e[0] : e; detail = String((x && x.error && (x.error.message || x.error.status)) || "").slice(0, 240); const dd = x && x.error && x.error.details; if (Array.isArray(dd) && dd[0] && dd[0].reason) detail += " [" + String(dd[0].reason).slice(0, 60) + "]"; } catch {}
-      /* a fingerprint of the stored key, never the key: enough to tell a wrong paste from a rejected key */
-      const keyShape = { length: aiKey.length, start: aiKey.slice(0, 3), end: aiKey.slice(-4), trimmed: aiKey.length !== String(env.AI_KEY).length, spaces: /\s/.test(aiKey) };
-      return json({ error: "AI error", upstream: upstream.status, detail, keyShape }, 502);
+      return json({ error: "AI error", upstream: upstream.status, detail }, 502);
     }
     const data = await upstream.json();
     let text = "";
