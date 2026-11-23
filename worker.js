@@ -13,6 +13,7 @@
                                 for example https://cconcham.github.io
      AI_KEY            secret   your AI provider key
      AI_MODEL          text     model name
+     AI_FALLBACK       text     optional. Models to try when the main one is overloaded, comma separated.
      AI_URL            text     optional. Leave empty to use Google Gemini directly. Set it to an OpenAI compatible
                                 chat completions address to use another provider.
      PRO_CODES         secret   optional. Access codes, comma separated. A signed in user who enters one becomes Pro.
@@ -275,10 +276,11 @@ export default {
 
     /* Google's own Gemini address is the default (it accepts the newer "AQ." keys in the x-goog-api-key header).
        Set AI_URL to use any OpenAI compatible provider instead. */
-    const model = env.AI_MODEL || "gemini-3.8-flash";
     const native = !env.AI_URL;
-    let upstream;
-    try {
+    /* When the provider is overloaded (503) or rate limited (429), wait briefly and try again,
+       then move to the next model in the list. AI_FALLBACK is a comma separated list of model names. */
+    const models = [env.AI_MODEL || "gemini-3.8-flash"].concat(native ? list(env.AI_FALLBACK || "gemini-3.6-flash, gemini-3.5-flash-lite") : []);
+    const callAI = (model) => {
       if (native) {
         const sys = messages.find((m) => m.role === "system");
         const body2 = {
@@ -286,15 +288,29 @@ export default {
           generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 },
         };
         if (sys) body2.systemInstruction = { parts: [{ text: sys.content }] };
-        upstream = await fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent", {
+        return fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent", {
           method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": aiKey }, body: JSON.stringify(body2),
         });
-      } else {
-        upstream = await fetch(env.AI_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + aiKey },
-          body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.3 }),
-        });
+      }
+      return fetch(env.AI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + aiKey },
+        body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.3 }),
+      });
+    };
+    let upstream, usedModel = models[0];
+    try {
+      outer:
+      for (let mi = 0; mi < models.length; mi++) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          usedModel = models[mi];
+          upstream = await callAI(usedModel);
+          if (upstream.ok) break outer;
+          const st = upstream.status;
+          if (st !== 503 && st !== 429 && st !== 500 && !(st === 404 && mi > 0)) break outer;
+          if (st === 404) break;
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
+        }
       }
     } catch { return json({ error: "AI unreachable" }, 502); }
     if (upstream.status === 429) return json({ error: "busy" }, 429);
@@ -321,6 +337,6 @@ export default {
       const used = parseInt((await db.get(codeKey)) || "0", 10);
       await db.put(codeKey, String(used + 1), { expirationTtl: 172800 });
     }
-    return json({ text: text || "" });
+    return json({ text: text || "", model: usedModel });
   },
 };
