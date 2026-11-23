@@ -243,6 +243,7 @@ export default {
 
     /* ----- AI ----- */
     if (!env.AI_KEY) return json({ error: "AI not configured" }, 500);
+    const aiKey = String(env.AI_KEY).replace(/^[\s"']+|[\s"']+$/g, "");
     let messages, maxTokens, rec = null, codeKey = null;
     if (kind === "type") {
       const sample = String(body.sample || "").slice(0, 14000);
@@ -286,12 +287,12 @@ export default {
         };
         if (sys) body2.systemInstruction = { parts: [{ text: sys.content }] };
         upstream = await fetch(GEMINI_URL + encodeURIComponent(model) + ":generateContent", {
-          method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": env.AI_KEY }, body: JSON.stringify(body2),
+          method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": aiKey }, body: JSON.stringify(body2),
         });
       } else {
         upstream = await fetch(env.AI_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.AI_KEY },
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + aiKey },
           body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.3 }),
         });
       }
@@ -300,8 +301,10 @@ export default {
     if (!upstream.ok) {
       /* pass on the provider's own status and message so a wrong key or model name is easy to spot */
       let detail = "";
-      try { const e = await upstream.json(); const x = Array.isArray(e) ? e[0] : e; detail = String((x && x.error && (x.error.message || x.error.status)) || "").slice(0, 240); } catch {}
-      return json({ error: "AI error", upstream: upstream.status, detail }, 502);
+      try { const e = await upstream.json(); const x = Array.isArray(e) ? e[0] : e; detail = String((x && x.error && (x.error.message || x.error.status)) || "").slice(0, 240); const dd = x && x.error && x.error.details; if (Array.isArray(dd) && dd[0] && dd[0].reason) detail += " [" + String(dd[0].reason).slice(0, 60) + "]"; } catch {}
+      /* a fingerprint of the stored key, never the key: enough to tell a wrong paste from a rejected key */
+      const keyShape = { length: aiKey.length, start: aiKey.slice(0, 3), end: aiKey.slice(-4), trimmed: aiKey.length !== String(env.AI_KEY).length, spaces: /\s/.test(aiKey) };
+      return json({ error: "AI error", upstream: upstream.status, detail, keyShape }, 502);
     }
     const data = await upstream.json();
     let text = "";
